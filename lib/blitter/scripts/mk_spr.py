@@ -204,7 +204,7 @@ class Encoder :
                     idx = len(s)-s.rindex(bl)
                     if idx < 65536 : 
                         code= CODE_REF
-                        data= chr (idx>>8) + chr(idx & 0xff)
+                        data= chr(idx & 0xff)+chr(idx>>8)
 
             # blit header
             s += chr(code<<6 | ((1<<5) if eol else 0) | min(n,31) )

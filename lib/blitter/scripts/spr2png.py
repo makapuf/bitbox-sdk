@@ -20,6 +20,8 @@ CODE_FILL = 1
 CODE_DATA = 2
 CODE_REF  = 3
 
+DATACODE_STR = ['u16','u8','couples']
+
 DATA_u16 = 0
 DATA_u8  = 1
 DATA_cpl = 2
@@ -122,12 +124,22 @@ class Sprite :
 
                 elif bc == CODE_REF : 
                     # read back data index as u16
-                    idx = struct.unpack('<H',self.f.read(2))
+                    idx = struct.unpack('<H',self.f.read(2))[0]
+                    oldpos = self.f.tell() # save for later
+                    self.f.seek(-idx-3,1)  # go to back reference
                     if self.datacode == DATA_cpl : 
-                        pixels = [self.palette[0][0]]*bl
+                        pixels = ()
+                        for i in range(bl//2) : 
+                            c = ord(self.f.read(1))
+                            pixels += self.palette[c]
+                        if bl%2 : 
+                            pixels += (self.palette[ord(self.f.read(1))][0],)
                     else : 
                         pixels = [(255,0,255,255)]*bl
+                        # fixme implement it
                     if TYPECOLOR : color = (0,255,0,255)  
+                    self.f.seek(oldpos)  # get back to where we were
+
                     for i,color in enumerate(pixels) : 
                         data[x+i,y+frame_id*self.height] = color
 
@@ -141,7 +153,7 @@ class Sprite :
                     x+=bl
 
     def __str__(self) :
-        s= "%dx%d, %d frames, datacode : %d"%(self.width, self.height, len(self.frames_index), self.datacode)
+        s= "%dx%d, %d frames, datacode:%d (%s)"%(self.width, self.height, len(self.frames_index), self.datacode, DATACODE_STR[self.datacode])
         s+= '\nhitbox : %d,%d-%d,%d'%self.hitbox
         if self.palette : s += "\n%d couples in palette"%len(self.palette)
         return s
