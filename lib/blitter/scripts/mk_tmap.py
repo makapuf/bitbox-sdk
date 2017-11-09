@@ -207,17 +207,18 @@ if __name__=='__main__' :
         if tsA != tsB : 
             # not really an error, just an info
             print >>sys.stderr, ' stderr from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA,tsB)
-        print "    X(%s_map) \\"%tmap_name 
-        print "    X(%s_tset) \\"%tsA
+        print "#define %s_MAP  \"%s_map\""%(tmap_name, tmap_name)
+        print "#define %s_TSET \"%s_tset\""%(tmap_name, tsA)
     print
 
-    print '#define %s_OBJECT_GROUPS \\'%tmap_name
-    objgroups, unique_states = out_objects(tmap, args.filename, of)
-    for name, index in objgroups : 
-        print "    X(%s,%s) \\"%(name,index)
-
-    print '#define %s_OBJECTS \\'%tmap_name
-    for ts,typ in unique_states : 
-        if typ==None : usage('Referenced tile in %s has no type !'%ts)
-        print "    X(%s,%s) \\"%(ts,typ)
+    if objgroups : 
+        print '#define %s_OBJECT_GROUPS \\'%tmap_name
+        objgroups, unique_states = out_objects(tmap, args.filename, of)
+        for name, index in objgroups : 
+            print "    X(%s,%s) \\"%(name,index)
+    if unique_states : 
+        print '#define %s_OBJECTS \\'%tmap_name
+        for ts,typ in unique_states : 
+            if typ==None : usage('Referenced tile in %s has no type !'%ts)
+            print "    X(%s,%s) \\"%(ts,typ)
     print
