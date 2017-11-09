@@ -211,9 +211,9 @@ if __name__=='__main__' :
         print "#define %s_TSET \"%s_tset\""%(tmap_name, tsA)
     print
 
+    objgroups, unique_states = out_objects(tmap, args.filename, of)
     if objgroups : 
         print '#define %s_OBJECT_GROUPS \\'%tmap_name
-        objgroups, unique_states = out_objects(tmap, args.filename, of)
         for name, index in objgroups : 
             print "    X(%s,%s) \\"%(name,index)
     if unique_states : 
