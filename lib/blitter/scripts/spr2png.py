@@ -138,10 +138,10 @@ class Sprite :
                     else : 
                         pixels = [(255,0,255,255)]*bl
                         # fixme implement it
-                    if TYPECOLOR : color = (0,255,0,255)  
                     self.f.seek(oldpos)  # get back to where we were
 
                     for i,color in enumerate(pixels) : 
+                        if TYPECOLOR : color = (0,255,0,255)  
                         data[x+i,y+frame_id*self.height] = color
 
 
