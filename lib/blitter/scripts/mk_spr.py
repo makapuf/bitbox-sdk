@@ -204,19 +204,23 @@ class Encoder :
                     idx = len(s)-s.rindex(bl)
                     if idx < 65536 : 
                         code= CODE_REF
-                        data= chr(idx & 0xff)+chr(idx>>8)
+                        data= None # exact value will be determined after since it depends on size of header
 
             # blit header
-            s += chr(code<<6 | ((1<<5) if eol else 0) | min(n,31) )
+            s_header = chr(code<<6 | ((1<<5) if eol else 0) | min(n,31) )
             n-=31
             while n >= 255 : 
-                s += chr(255)
+                s_header += chr(255)
                 n -= 255
             if n >=0 : 
-                s += chr(n)
+                s_header += chr(n)
 
-            # data
-            s += data
+            # adjust backref now that we know header size
+            if code==CODE_REF :
+                idx += len(s_header) # adjust for header size
+                data = chr(idx&0xff)+chr(idx>>8)
+
+            s += s_header+data
 
             if eol  : 
                 y += 1 

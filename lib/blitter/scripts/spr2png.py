@@ -126,7 +126,8 @@ class Sprite :
                     # read back data index as u16
                     idx = struct.unpack('<H',self.f.read(2))[0]
                     oldpos = self.f.tell() # save for later
-                    self.f.seek(-idx-3,1)  # go to back reference
+                    idx += 2 #adjust
+                    self.f.seek(-idx,1)  # go to back reference
                     if self.datacode == DATA_cpl : 
                         pixels = ()
                         for i in range(bl//2) : 

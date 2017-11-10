@@ -282,15 +282,16 @@ static void sprite3_cpl_line_noclip (object *o) {
                 break;
 
             case BLIT_BACK : 
-            // fixme does not work yet back reference as nb u16 :4, backref:10 
                 {
-                    const int delta = ((header&3)<<8 | *src)-2;
-                    const int nnb = nb>>3;
-                    for (int i=0;i<nnb;i++) {
-                        *dst++ = couple_palette[(src-delta*2)[i]];
-                    }                    
-                    dst += nnb; 
-                    src += 1;
+                    const uint16_t delta = *(uint16_t*)(src);
+                    for (int i=0;i<nb/2;i++) {
+                        *(couple_t*)dst = couple_palette[(src-delta)[i]];
+                        dst+=2;
+                    }
+                    if (nb%2) {
+                        *dst++ = couple_palette[(src-delta)[nb/2]];
+                    }
+                    src+=2;
                 }
                 break;
 
