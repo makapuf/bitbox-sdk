@@ -117,13 +117,14 @@ static void sprite3_frame(struct object *o, int start_line)
             case BLIT_SKIP : 
                 break; 
             case BLIT_COPY : 
-                o->c += nb*sizeof(pixel_t); // fixme not if cpl .. 
+                // o->b => a palette ? cpl refs
+                o->c += o->b ? (nb+1)/2 : nb*sizeof(pixel_t); 
                 break;
             case BLIT_BACK : 
                 o->c += 2; 
                 break; 
             case BLIT_FILL : 
-                o->c += 2; 
+                o->c += o->b ? 1 : sizeof(pixel_t);
                 break;
         }
     }
