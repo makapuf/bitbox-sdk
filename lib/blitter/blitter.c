@@ -214,10 +214,10 @@ void graph_line()
         if (vga_line<o->ry+o->h) // XXX when/why does that not arrive ?
             o->line(o);
 
-        #ifndef EMULATOR
-        // stop if cycle counter is big enough, dropping objects on that line - may continue after
-        //if (DWT->CYCCNT - line_time > VGA_H_PIXELS*VGA_PIXELCLOCK-1000) break;
+        #ifdef VGA_SKIPLINE // multiline blit
+        if (o->z>=128) break; // stop here, will finish on next line
         #endif
+
     }
 
     } else {
