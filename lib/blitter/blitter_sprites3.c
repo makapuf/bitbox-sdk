@@ -17,7 +17,9 @@ static void sprite3_frame(struct object *o, int line);
 static void sprite3_line_noclip(struct object *o);
 static void sprite3_line_clip(struct object *o);
 static void sprite3_cpl_line_noclip (object *o);
-// static void sprite3_line_flash (struct object *o);
+static void sprite3_cpl_line_noclip_2X (object *o);
+
+// static void sprite3_cpl_line_solid (struct object *o);
 
 #define DATACODE_u16 0
 #define DATACODE_u8 1
@@ -78,6 +80,7 @@ struct object *sprite3_new(const void *data, int x, int y, int z)
     o->y=y;
     o->z=z;
     o->fr=0;
+    o->d=0; // reset MODE
 
     return o;
 }
@@ -111,7 +114,6 @@ static void sprite3_frame(struct object *o, int start_line)
     while (start_line) {
         uint8_t h = *(uint8_t *)o->c; // blit header
         int nb = read_len((uint8_t **)&(o->c));
-        if (h&1<<5) start_line--;
         switch(h>>6) {
             case BLIT_SKIP : 
                 break; 
@@ -126,11 +128,15 @@ static void sprite3_frame(struct object *o, int start_line)
                 o->c += o->b ? 1 : sizeof(pixel_t);
                 break;
         }
+        if (h&(1<<5)) start_line--;
     }
 
-    // select if clip or noclip (choice made each line)
+    // select if clip or noclip (choice made each frame)
     if (o->b) {
-        o->line = sprite3_cpl_line_noclip;
+        if (o->d & 1) // 2X rendering
+            o->line = sprite3_cpl_line_noclip_2X;
+        else
+            o->line = sprite3_cpl_line_noclip;
         // fixme clipping 
     } else {    
         if ( o->x < -MARGIN || o->x - (int)o->w >= VGA_H_PIXELS+MARGIN )
@@ -297,4 +303,79 @@ static void sprite3_cpl_line_noclip (object *o) {
         }
     } while (!(header & 1<<5)); // eol
     o->c=(intptr_t)src;
+}
+
+
+
+
+// This one has doubled size
+static void sprite3_cpl_line_noclip_2X (object *o) {
+
+    uint8_t *  restrict src=(uint8_t*)o->c;
+    pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
+    couple_t * restrict couple_palette = (couple_t *)o->b;
+
+    uint8_t header;
+    do {
+        header=*src;
+
+        int nb = read_len(&src);
+        couple_t c;
+        switch (header >> 6) {
+            case BLIT_SKIP :
+                dst += nb*2;
+                break;
+            case BLIT_COPY:
+                for (int i=0;i<nb/2;i++) {
+                    c=couple_palette[*src++];
+                    *(couple_t*)dst = (c>>16)*0x10001;
+                    *(couple_t*)(dst+2) = (c&0xffff)*0x10001;
+                    dst += 4; // couple
+                }
+                
+                if (nb%2) {
+                    const couple_t last = couple_palette[*src++];
+                    *dst++ = last >> 16;
+                    *dst++ = last >> 16;
+                }                
+                break;
+
+            case BLIT_FILL : 
+                c=couple_palette[*src];
+                for (int i=0;i<nb/2;i++) {
+                    *(couple_t*)dst = (c>>16)*0x10001;
+                    *(couple_t*)(dst+2) = (c&0xffff)*0x10001;
+                    dst += 4; // couple
+                }
+                
+                if (nb%2) {
+                    *dst++ = c >> 16;
+                    *dst++ = c >> 16;
+                }   
+                src++;
+                break;
+
+            case BLIT_BACK : 
+                {
+                    const uint16_t delta = *(uint16_t*)(src);
+                    for (int i=0;i<nb/2;i++) {
+                        couple_t c = couple_palette[(src-delta)[i]];
+                        *(couple_t*)dst = (c>>16)*0x10001;
+                        *(couple_t*)(dst+2) = (c&0xffff)*0x10001;
+                        dst+=4;
+                    }
+                    if (nb%2) {
+                        couple_t c = couple_palette[(src-delta)[nb/2]];
+                        *dst++ = c>>16;
+                        *dst++ = c>>16;
+                    }
+                    src+=2;
+                }
+                break;
+
+        }
+    } while (!(header & 1<<5)); // eol
+    // if we're on an even line, reset (ie will draw again)
+    if ((vga_line-o->y)%2)
+        o->c=(intptr_t)src;
 }
