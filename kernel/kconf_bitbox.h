@@ -56,7 +56,6 @@
 #define VGA_V_FRONTPORCH 10
 #define VGA_V_SYNC 2
 #define VGA_V_BACKPORCH 33
-#define VGA_V_BLANK 45
 
 #define VGA_PIXELCLOCK 7 // DMA clocks per pixel
 
@@ -81,8 +80,6 @@
 #define VGA_V_SYNC 4
 #define VGA_V_BACKPORCH 14
 
-#define VGA_V_BLANK 19
-
 #define VGA_PIXELCLOCK 5 // DMA clocks per pixel
 
 #define PLL_M 4
@@ -95,7 +92,6 @@
 // 800 600 non VESA O/C core (192Hz) - ~ 34kHz, 56fps
 #define VGA_H_PIXELS 800
 #define VGA_V_PIXELS 600
-#define VGA_V_BLANK 19
 #define VGA_FPS 56
 
 #define VGA_H_FRONTPORCH 32
@@ -120,9 +116,7 @@
 #define VGA_SKIPLINE
 #define VGA_H_PIXELS 400
 #define VGA_V_PIXELS 300
-#define VGA_V_BLANK 10
 #define VGA_FPS 56
-
 
 #define VGA_H_FRONTPORCH 32
 #define VGA_H_SYNC 64
@@ -132,7 +126,6 @@
 #define VGA_V_SYNC 2
 #define VGA_V_BACKPORCH 7
 
-#define VGA_FPS 56
 #define VGA_PIXELCLOCK 10 // DMA clocks per pixel
 
 #define PLL_M 4
@@ -146,7 +139,6 @@
 #define VGA_SKIPLINE
 #define VGA_H_PIXELS 320
 #define VGA_V_PIXELS 240
-#define VGA_V_BLANK 10
 #define VGA_FPS 60
 
 #define VGA_H_FRONTPORCH 8
@@ -168,7 +160,6 @@
 
 #define VGA_H_PIXELS 640
 #define VGA_V_PIXELS 480
-#define VGA_V_BLANK 20
 #define VGA_FPS 60
 
 #define VGA_H_FRONTPORCH 16
@@ -192,13 +183,18 @@
 
 #endif
 
+#if !(VGA_MODE==NONE)
+
+#define VGA_V_BLANK (VGA_V_FRONTPORCH + VGA_V_SYNC + VGA_V_BACKPORCH)
+
 #ifdef VGA_SKIPLINE
 // line frequency in Hz, should be >30kHz, 31.5 kHz for vesa 640x480
-#define VGA_VFREQ (VGA_FPS*2*(VGA_V_PIXELS+VGA_V_BACKPORCH+VGA_V_SYNC+VGA_V_FRONTPORCH))
+#define VGA_VFREQ (VGA_FPS*2*(VGA_V_PIXELS+VGA_V_BLANK))
 #else
-#define VGA_VFREQ (VGA_FPS*  (VGA_V_PIXELS+VGA_V_BACKPORCH+VGA_V_SYNC+VGA_V_FRONTPORCH))
+#define VGA_VFREQ (VGA_FPS*  (VGA_V_PIXELS+VGA_V_BLANK))
 #endif
 
+#endif
 
 #ifndef NO_AUDIO
 

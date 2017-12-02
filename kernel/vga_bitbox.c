@@ -1,3 +1,7 @@
+#if (VGA_MODE==NONE)
+
+#else
+
 /*
 
 mode as defined in kconf.h values
@@ -395,3 +399,4 @@ void __attribute__ ((used)) DMA2_Stream5_IRQHandler() // DMA handler
 
 }
 
+#endif
