@@ -34,14 +34,7 @@
 
 
 // Video Mode
-#if (VGA_MODE==NONE)
-
-#define PLL_M 8
-#define PLL_N 336
-#define PLL_P 2
-#define PLL_Q 7
-
-#elif VGA_MODE==OVERCLOCK_640
+#if VGA_MODE==OVERCLOCK_640
 
 // 640 480 VESA on 192 MHz SYSCLK
 
@@ -183,8 +176,6 @@
 
 #endif
 
-#if !(VGA_MODE==NONE)
-
 #define VGA_V_BLANK (VGA_V_FRONTPORCH + VGA_V_SYNC + VGA_V_BACKPORCH)
 
 #ifdef VGA_SKIPLINE
@@ -192,8 +183,6 @@
 #define VGA_VFREQ (VGA_FPS*2*(VGA_V_PIXELS+VGA_V_BLANK))
 #else
 #define VGA_VFREQ (VGA_FPS*  (VGA_V_PIXELS+VGA_V_BLANK))
-#endif
-
 #endif
 
 #ifndef NO_AUDIO
