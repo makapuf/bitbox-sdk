@@ -179,8 +179,9 @@ def quantize_couples(cpls,nb):
     for bin,_ in bins :
         # find best representant of bin : centroid ? most frequent ?
         #acl=tuple(int(round(avg([c[i] for c in cl])/32.)*31) for i in range(8)) # why 32 ? 5 bits RGB 
-        acl=tuple(int(sum(c[axis]*nb for c,nb in bin.items()) / sum( bin.values() ) )&~7 for axis in range(8))
-        if any( x>255 for x in acl) : print acl, bin
+        #acl=tuple(int(sum(c[axis]*nb for c,nb in bin.items()) / sum( bin.values() ) )&~7 for axis in range(8))
+        #if any( x>255 for x in acl) : print acl, bin
+        acl = max(bin,key=lambda x:bin[x]) # force taking an existing color
 
         # cut alpha
         r1,g1,b1,a1,r2,g2,b2,a2 = acl
