@@ -3,10 +3,10 @@
 
 /* object layout in memory : 
  data : raw 8/16b data (start of blits)
- a : frame index as 16bits offsets (relative)
+ a : start of raw source data
 
  b : palette if couple palette
- d : if not zero, replace with this color
+ d : if hi u16 not zero, replace with this color. if d&1 render with size = 2x (modify w/h as needed!)
  c : current blitting pos in data
  */
 
@@ -60,12 +60,10 @@ struct object *sprite3_new(const void *data, int x, int y, int z)
 
     o->w = h->width;
     o->h = h->height;
-    o->nb_frames = h->frames;
     
-    o->a = (uintptr_t)&h->data;   // skip frame indices
+    o->a = (uintptr_t)h; 
     if (h->datacode == DATACODE_c8) {
         uint32_t palette_len = h->data[h->frames];
-        //message("palette has %d entries\n", palette_len);
         o->b = (uintptr_t) &h->data[h->frames+1];
         o->data = (void *) &h->data[h->frames+1+palette_len];
     } else {
@@ -105,7 +103,8 @@ static void sprite3_frame(struct object *o, int start_line)
     o->c  = (intptr_t)o->data;
 
     // Skip to frame
-    o->c += ((uint32_t*)o->a)[o->fr]; 
+    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    o->c += h->data[o->fr]; 
     start_line %= o->h;
 
     // Skip first lines as needed -> extract from noclip ? 
