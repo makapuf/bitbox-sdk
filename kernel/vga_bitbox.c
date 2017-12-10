@@ -352,9 +352,8 @@ void __attribute__ ((used)) TIM5_IRQHandler() // Hsync Handler
             line_time-=VGA_H_PIXELS;
             c=0b111110000000000; // red
         }
-        draw_buffer[line_time-1]=0;
-        draw_buffer[line_time]=c;
-        draw_buffer[line_time+1]=0;
+        if (line_time<VGA_H_PIXELS)
+        	draw_buffer[line_time]=c;
         #endif
 
 	}  else {
