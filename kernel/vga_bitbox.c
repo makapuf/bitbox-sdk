@@ -31,7 +31,7 @@ mode as defined in kconf.h values
 #include "kconf.h"
 #include "stm32f4xx.h" // ports, timers, profile
 
-#define DRAW_MARGIN 64
+#define DRAW_MARGIN 128
 
 // --- local
 #define TIMER_CYCL (SYSCLK/VGA_VFREQ/APB1_DIV)
