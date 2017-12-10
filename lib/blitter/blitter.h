@@ -47,7 +47,7 @@ object *sprite3_new(const void *sprite_data, int x, int y, int z) __attribute__ 
 object *btc4_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
 object *btc4_2x_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
 
-static inline uint8_t sprite3_nbframes(const object *o) { return (uint8_t *)o->a[7]; }
+static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
 
 #define TSET_16 0
 #define TSET_32 1
