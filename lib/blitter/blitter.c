@@ -211,22 +211,17 @@ void graph_line()
     // now trigger each activelist, in Z descending order
     for (o=blt.activelist_head;o;o=o->activelist_next)
     {
+        #ifdef VGA_SKIPLINE // multiline blit
+        if (o->z<128) break; // stop here, will finish on next line
+        #endif
         if (vga_line<o->ry+o->h) // XXX when/why does that not arrive ?
             o->line(o);
-
-        #ifdef VGA_SKIPLINE // multiline blit
-        if (o->z>=128) break; // stop here, will finish on next line
-        #endif
-
     }
 
     } else {
         // continue with o
         for (;o;o=o->activelist_next)
-        {
-            if (vga_line<o->ry+o->h) // XXX when/why does that arrive ?
-                o->line(o);
-        }
+            o->line(o);
     }
 
 }
