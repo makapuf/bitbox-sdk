@@ -28,10 +28,10 @@ HEADER
     u16 hitbox_x2
     u16 hitbox_y2
 
-    u32 frame_index[nb of frames] : 
-        index of frames in the data. 
+    u16 line_index[nb of lines] : 
+        index of lines in the data. 
         0 means start of data, not start of file.
-        frames are deduplicated, eg it's not monotonous nor non-unique
+        lines are deduplicated, eg it's not monotonous nor non-unique
 
 PALETTE (only if Data code == cpl)
         u32 palette _length
@@ -74,22 +74,25 @@ from utils import *
 
 DEBUG=False
 VERBOSE_SPR=False # explicits blits for sprite encoding
-MIN_MATCH=2000  # u16 / couples / quads
-MIN_FILL =2  # u16 / couples
 
 class Encoder : 
     def __init__(self, frames, hitbox) : 
+        self.frm_w,self.frm_h=frames[0].size
+        self.nbframes = len(frames)
+
+        # if by line, re-cut frames to lines # fixme make faster
+        lines=[]
+        for fr in frames : 
+            lines += cut_image(fr,self.frm_w, 1)
+        frames= lines
+
         # dedup frames
         self.idframes=[] # frame -> unique frame reference        
         self.unique_frames = [] # list of unique frames
-
         for i,img in enumerate(frames) : 
             if img not in self.unique_frames : self.unique_frames.append(img)
             self.idframes.append(self.unique_frames.index(img))
-
         self.src = stack_images_vertically(self.unique_frames)
-
-        self.frm_h = self.unique_frames[0].size[1]
 
         self.hitbox = hitbox
         self.palette=None
@@ -224,18 +227,17 @@ class Encoder :
 
             if eol  : 
                 y += 1 
-                if y%self.frm_h==0 : 
-                    self.frame_index.append(len(s))
+                self.frame_index.append(len(s))
 
         self.bindata = s
         print '%d bytes, %.1f bpp'%(len(self.bindata), 8.*len(self.bindata) / (self.src.size[0] * self.src.size[1]))
 
     def write_header(self,of) : 
         w,h = self.src.size
-        of.write(struct.pack('HHHBB',0xb17b,w,self.frm_h,len(self.idframes),self.datacode)) # this is the number of frame references
-        print >>sys.stderr,'hitbox:',self.hitbox
+        of.write(struct.pack('HHHBB',0xb17b,w,self.frm_h,self.nbframes,self.datacode))
         of.write(struct.pack('4H',*self.hitbox))
-        array.array('I', [self.frame_index[id] for id in self.idframes]).tofile(of)
+        array.array('H', [self.frame_index[id] for id in self.idframes]).tofile(of)
+        print 'header size:', of.tell()
 
     def write_palette(self,of) : 
         array.array('I', 

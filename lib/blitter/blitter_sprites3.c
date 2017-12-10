@@ -7,7 +7,6 @@
 
  b : palette if couple palette
  d : if hi u16 not zero, replace with this color. if d&1 render with size = 2x (modify w/h as needed!)
- c : current blitting pos in data
  */
 
 #include <string.h> // memcpy, memset
@@ -45,7 +44,7 @@ struct SpriteHeader {
     uint8_t frames; 
     uint8_t datacode; 
     uint16_t x1,y1,x2,y2; // hitbox
-    uint32_t data[]; // frame_start indices, then len+couple_palette[len] if couples, then data 
+    uint16_t data[]; // frame_start indices, then len+couple_palette[len] if couples, then data 
 };
 
 struct object *sprite3_new(const void *data, int x, int y, int z)
@@ -65,12 +64,14 @@ struct object *sprite3_new(const void *data, int x, int y, int z)
     
     o->a = (uintptr_t)h; 
     if (h->datacode == DATACODE_c8) {
-        uint32_t palette_len = h->data[h->frames];
-        o->b = (uintptr_t) &h->data[h->frames+1];
-        o->data = (void *) &h->data[h->frames+1+palette_len];
+        uint32_t *p = (uint32_t *)&h->data[h->frames*h->height];
+        uint32_t palette_len = *p++;
+        o->b = (uintptr_t) p; // real start of palette
+        o->data = (void *) (p+palette_len); // after start of palette
+        message("palette len %d\n",palette_len);
     } else {
         o->b=0;
-        o->data = (void*) &h->data[h->frames]; 
+        o->data = (void*) &h->data[h->frames*h->height]; 
     }
 
     o->frame = sprite3_frame;
@@ -101,57 +102,24 @@ static inline int read_len(uint8_t * restrict * src)
 
 static void sprite3_frame(struct object *o, int start_line)
 {
-    // start line is how much we need to crop to handle out of screen data
-
-    o->c  = (intptr_t)o->data;
-
-    // Skip to frame
-    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
-    o->c += h->data[o->fr]; 
-    start_line %= o->h;
-
-    // Skip first lines as needed -> extract from noclip ? 
-    while (start_line) {
-        uint8_t h = *(uint8_t *)o->c; // blit header
-        int nb = read_len((uint8_t **)&(o->c));
-        switch(h>>6) {
-            case BLIT_SKIP : 
-                break; 
-            case BLIT_COPY : 
-                // o->b => a palette ? cpl refs
-                o->c += o->b ? (nb+1)/2 : nb*sizeof(pixel_t); 
-                break;
-            case BLIT_BACK : 
-                o->c += 2; 
-                break; 
-            case BLIT_FILL : 
-                o->c += o->b ? 1 : sizeof(pixel_t);
-                break;
-        }
-        if (h&(1<<5)) start_line--;
-    }
-
     // select if clip or noclip (choice made each frame)
     if (o->b) {
         if (o->d & 1) // 2X rendering
             o->line = sprite3_cpl_line_noclip_2X;
         else
             o->line = sprite3_cpl_line_noclip;
-        // fixme clipping 
-    } else {    
+        // fixme clipping - H out of screen 
+    } else {
         if ( o->x < -MARGIN || o->x - (int)o->w >= VGA_H_PIXELS+MARGIN )
             o->line = sprite3_line_clip;
         else 
             o->line = sprite3_line_noclip;
     }
-
-    //o->line = sprite3_line_debug;
-
 }
 
 static void sprite3_line_noclip (struct object *o)
 {
-    uint8_t * restrict src = (uint8_t *)o->c; 
+    uint8_t * restrict src = (uint8_t *)o->c; // fixme
     pixel_t * restrict dst = &draw_buffer[o->x]; 
     uint8_t header;
     uint16_t backref;
@@ -195,7 +163,7 @@ static void sprite3_line_noclip (struct object *o)
 // fixme join with noclip through inline 
 static void sprite3_line_clip (struct object *o)
 {
-    uint8_t * restrict src = (uint8_t *)o->c; 
+    uint8_t * restrict src = (uint8_t *)o->c; // fixme
     uint8_t * restrict dst = (uint8_t *)&draw_buffer[o->x]; 
 
     //message("clip line %d %d\n",vga_line-o->y, o->x);
@@ -246,9 +214,13 @@ static void sprite3_line_clip (struct object *o)
 }
 
 // any wide size
-static void sprite3_cpl_line_noclip (object *o) {
+static void sprite3_cpl_line_noclip (object *o) 
+{
+    // Skip to line
+    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    const uint16_t line = o->fr*h->height+vga_line-o->ry;
+    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line]; 
 
-    uint8_t *  restrict src=(uint8_t*)o->c;
     pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
     couple_t * restrict couple_palette = (couple_t *)o->b;
 
@@ -302,7 +274,6 @@ static void sprite3_cpl_line_noclip (object *o) {
 
         }
     } while (!(header & 1<<5)); // eol
-    o->c=(intptr_t)src;
 }
 
 
@@ -311,7 +282,11 @@ static void sprite3_cpl_line_noclip (object *o) {
 // This one has doubled size
 static void sprite3_cpl_line_noclip_2X (object *o) {
 
-    uint8_t *  restrict src=(uint8_t*)o->c;
+    // Skip to line
+    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    const uint16_t line = o->fr*h->height+(vga_line-o->ry)/2;
+    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line]; 
+
     pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
     couple_t * restrict couple_palette = (couple_t *)o->b;
 

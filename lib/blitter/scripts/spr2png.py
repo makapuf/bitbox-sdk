@@ -8,8 +8,9 @@ spr2png.py : simple decoder for spr format to single png vertical strip
 
 """
 TODO
-   really copy pixels for refs instead of just blitting constant pixels
+Add args : typecolor, debug, frame columns ... 
 """
+
 from PIL import Image
 import struct 
 from utils import u162rgba
@@ -51,10 +52,11 @@ class Sprite :
         return data
 
     def parse_header(self) : 
-        magic,self.width,self.height,frames, self.datacode = struct.unpack('HHHBB', self.f.read(8))
+        magic,self.width,self.height,self.nbframes, self.datacode = struct.unpack('HHHBB', self.f.read(8))
         assert magic == 0xb17b
         self.hitbox = struct.unpack ('4H',self.f.read(8))
-        self.frames_index = struct.unpack('%dI'%frames, self.f.read(4*frames))
+        total_lines = self.height*self.nbframes
+        self.lines_index = struct.unpack('%dH'%total_lines, self.f.read(total_lines*2))
         # now read palette if needed
         if self.datacode == DATA_cpl : 
             s= self.f.read(4)
@@ -77,16 +79,16 @@ class Sprite :
         yield blit_code, blit_len, blit_eol
 
     def unpack(self) : 
-        self.img = Image.new('RGBA',(self.width,self.height*len(self.frames_index)))
+        self.img = Image.new('RGBA',(self.width,self.height*self.nbframes))
         data = self.img.load()
         file_start = self.f.tell()
 
         # frame by frame, seek to position first (duplicated frames !)
-        for frame_id, frame_idx in enumerate(self.frames_index) : 
-            y=0 ; x=0
-            # print 'frame',frame_id,'-',frame_idx
-            self.f.seek(file_start+frame_idx)
-            while y < self.height : 
+        for y, line_idx in enumerate(self.lines_index) : 
+            x=0
+            self.f.seek(file_start+line_idx)
+
+            while True : # fill line
                 bc,bl,beol = next(self.read_blit())
                 if DEBUG : 
                     print ['skip','fill','data','copy'][bc],bl,'eol:', beol,'pos:',x,y
@@ -95,26 +97,26 @@ class Sprite :
                     pixels = self.read_data(bl)
                     for i,color in enumerate(pixels) : 
                         if TYPECOLOR : color = (255,0,0,255)  
-                        data[x+i,y+frame_id*self.height] = color
+                        data[x+i,y] = color
 
                 elif bc==CODE_FILL : 
                     if self.datacode==DATA_u16 : 
                         color = u162rgba(struct.unpack('H',self.f.read(2))[0])                    
                         if TYPECOLOR : color = (0,0,255,255)  
-                        for i in range(bl) : data[x+i,y+frame_id*self.height]=color
+                        for i in range(bl) : data[x+i,y]=color
                     elif self.datacode == DATA_u8 : 
                         color = struct.unpack('B',self.f.read(1))[0]
                         if TYPECOLOR : color = (0,0,255,255)  
-                        for i in range(bl) : data[x+i,y+frame_id*self.height]=color
+                        for i in range(bl) : data[x+i,y]=color
                     elif self.datacode == DATA_cpl : 
                         color = self.palette[ord(self.f.read(1))]
                         if TYPECOLOR : color = ((0,0,255,255),(0,0,200,255))
 
                         for i in range(0,bl-1,2) : 
-                            data[x+i  ,y+frame_id*self.height]=color[0]
-                            data[x+i+1,y+frame_id*self.height]=color[1]
+                            data[x+i  ,y]=color[0]
+                            data[x+i+1,y]=color[1]
                         if bl%2 : 
-                            data[x+bl-1,y+frame_id*self.height]=color[0]
+                            data[x+bl-1,y]=color[0]
 
                     else : 
                         raise ValueError, 'unknown datacode'
@@ -142,19 +144,16 @@ class Sprite :
 
                     for i,color in enumerate(pixels) : 
                         if TYPECOLOR : color = (0,255,0,255)  
-                        data[x+i,y+frame_id*self.height] = color
+                        data[x+i,y] = color
 
 
                 if beol :   
-                    y+=1
-                    x=0
-                    if DEBUG : self.img.save('debug.png')
-
+                    break
                 else : 
                     x+=bl
 
     def __str__(self) :
-        s= "%dx%d, %d frames, datacode:%d (%s)"%(self.width, self.height, len(self.frames_index), self.datacode, DATACODE_STR[self.datacode])
+        s= "%dx%d, %d frames, datacode:%d (%s)"%(self.width, self.height, self.nbframes, self.datacode, DATACODE_STR[self.datacode])
         s+= '\nhitbox : %d,%d-%d,%d'%self.hitbox
         if self.palette : s += "\n%d couples in palette"%len(self.palette)
         return s
