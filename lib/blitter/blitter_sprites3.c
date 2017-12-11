@@ -233,7 +233,7 @@ static void sprite3_cpl_line_noclip (object *o)
         switch (header >> 6) {
             case BLIT_SKIP :
                 //message("skip %d\n",nb);
-                dst += nb;
+                    dst += nb;
                 break;
             case BLIT_COPY:
                 for (int i=0;i<nb/2;i++) {
@@ -277,7 +277,16 @@ static void sprite3_cpl_line_noclip (object *o)
 }
 
 
-
+static inline void blit2Xcpl(pixel_t *dst, couple_t color)
+{
+    *(couple_t*)dst = (color&0xffff)*0x10001;
+    *(couple_t*)(dst+2) = (color >>16)*0x10001;
+}
+static inline void blit2Xsingle(pixel_t *dst, couple_t color)
+{
+    *dst = color &0xffff;
+    *(dst+1) = color &0xffff;
+}
 
 // This one has doubled size
 static void sprite3_cpl_line_noclip_2X (object *o) {
@@ -303,48 +312,43 @@ static void sprite3_cpl_line_noclip_2X (object *o) {
             case BLIT_COPY:
                 for (int i=0;i<nb/2;i++) {
                     c=couple_palette[*src++];
-                    *(couple_t*)dst = (c>>16)*0x10001;
-                    *(couple_t*)(dst+2) = (c&0xffff)*0x10001;
+                    blit2Xcpl(dst,c);
                     dst += 4; // couple
-                }
-                
-                if (nb%2) {
-                    const couple_t last = couple_palette[*src++];
-                    *dst++ = last >> 16;
-                    *dst++ = last >> 16;
+                }                
+                if (nb%2) {                    
+                    blit2Xsingle(dst,couple_palette[*src++]);
+                    dst += 2;
                 }                
                 break;
 
             case BLIT_FILL : 
-                c=couple_palette[*src];
+                c=couple_palette[*src++];
                 for (int i=0;i<nb/2;i++) {
-                    *(couple_t*)dst = (c>>16)*0x10001;
-                    *(couple_t*)(dst+2) = (c&0xffff)*0x10001;
+                    blit2Xcpl(dst,c);
                     dst += 4; // couple
                 }
                 
                 if (nb%2) {
-                    *dst++ = c >> 16;
-                    *dst++ = c >> 16;
+                    blit2Xsingle(dst,c);
+                    dst+=2;
                 }   
-                src++;
                 break;
 
             case BLIT_BACK : 
                 {
                     const uint16_t delta = *(uint16_t*)(src);
+                    src+=2;
+
                     for (int i=0;i<nb/2;i++) {
                         couple_t c = couple_palette[(src-delta)[i]];
-                        *(couple_t*)dst = (c>>16)*0x10001;
-                        *(couple_t*)(dst+2) = (c&0xffff)*0x10001;
+                        blit2Xcpl(dst,c);
                         dst+=4;
                     }
                     if (nb%2) {
                         couple_t c = couple_palette[(src-delta)[nb/2]];
-                        *dst++ = c>>16;
-                        *dst++ = c>>16;
+                        blit2Xsingle(dst,c);
+                        dst+=2;
                     }
-                    src+=2;
                 }
                 break;
 
