@@ -12,11 +12,11 @@
 #include <string.h> // memcpy, memset
 #include "blitter.h"
 
-static void sprite3_frame(struct object *o, int line);
-static void sprite3_line_noclip(struct object *o);
-static void sprite3_line_clip(struct object *o);
-static void sprite3_cpl_line_noclip (object *o);
-static void sprite3_cpl_line_noclip_2X (object *o);
+void sprite3_frame(struct object *o, int line);
+void sprite3_line_noclip(struct object *o);
+void sprite3_line_clip(struct object *o);
+void sprite3_cpl_line_noclip (object *o);
+void sprite3_cpl_line_noclip_2X (object *o);
 
 // static void sprite3_cpl_line_solid (struct object *o);
 
@@ -100,7 +100,7 @@ static inline int read_len(uint8_t * restrict * src)
     return nb;
 }
 
-static void sprite3_frame(struct object *o, int start_line)
+void sprite3_frame(struct object *o, int start_line)
 {
     // select if clip or noclip (choice made each frame)
     if (o->b) {
@@ -117,7 +117,7 @@ static void sprite3_frame(struct object *o, int start_line)
     }
 }
 
-static void sprite3_line_noclip (struct object *o)
+void sprite3_line_noclip (struct object *o)
 {
     uint8_t * restrict src = (uint8_t *)o->c; // fixme
     pixel_t * restrict dst = &draw_buffer[o->x]; 
@@ -161,7 +161,7 @@ static void sprite3_line_noclip (struct object *o)
 }
 
 // fixme join with noclip through inline 
-static void sprite3_line_clip (struct object *o)
+void sprite3_line_clip (struct object *o)
 {
     uint8_t * restrict src = (uint8_t *)o->c; // fixme
     uint8_t * restrict dst = (uint8_t *)&draw_buffer[o->x]; 
@@ -214,7 +214,7 @@ static void sprite3_line_clip (struct object *o)
 }
 
 // any wide size
-static void sprite3_cpl_line_noclip (object *o) 
+void sprite3_cpl_line_noclip (object *o) 
 {
     // Skip to line
     struct SpriteHeader *h = (struct SpriteHeader*)o->a;
@@ -289,7 +289,7 @@ static inline void blit2Xsingle(pixel_t *dst, couple_t color)
 }
 
 // This one has doubled size
-static void sprite3_cpl_line_noclip_2X (object *o) {
+void sprite3_cpl_line_noclip_2X (object *o) {
 
     // Skip to line
     struct SpriteHeader *h = (struct SpriteHeader*)o->a;
