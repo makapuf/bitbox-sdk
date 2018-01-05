@@ -23,7 +23,11 @@
 
 #define ROWS 64
 #define SAMPLES 31
-#define CHANNELS 4 // 4 ? 6 ? 32?
+
+#ifndef MOD_CHANNELS
+#define MOD_CHANNELS 4 // defaults to 4
+#endif 
+
 #define NONOTE 0xFFFF
 
 
@@ -46,10 +50,10 @@ struct Mod {
 };
 
 struct Pattern {
-    uint8_t sampleNumber[ROWS][CHANNELS];
-    uint16_t note[ROWS][CHANNELS];
-    uint8_t effectNumber[ROWS][CHANNELS];
-    uint8_t effectParameter[ROWS][CHANNELS];
+    uint8_t sampleNumber[ROWS][MOD_CHANNELS];
+    uint16_t note[ROWS][MOD_CHANNELS];
+    uint8_t effectNumber[ROWS][MOD_CHANNELS];
+    uint8_t effectParameter[ROWS][MOD_CHANNELS];
 };
 
 struct Player {
@@ -69,27 +73,27 @@ struct Player {
     uint8_t orderIndex;
     uint8_t oldOrderIndex;
     uint8_t patternDelay;
-    uint8_t patternLoopCount[CHANNELS];
-    uint8_t patternLoopRow[CHANNELS];
+    uint8_t patternLoopCount[MOD_CHANNELS];
+    uint8_t patternLoopRow[MOD_CHANNELS];
 
-    uint8_t lastSampleNumber[CHANNELS];
-    int8_t volume[CHANNELS];
-    uint16_t lastNote[CHANNELS];
-    uint16_t amigaPeriod[CHANNELS];
-    int16_t lastAmigaPeriod[CHANNELS];
+    uint8_t lastSampleNumber[MOD_CHANNELS];
+    int8_t volume[MOD_CHANNELS];
+    uint16_t lastNote[MOD_CHANNELS];
+    uint16_t amigaPeriod[MOD_CHANNELS];
+    int16_t lastAmigaPeriod[MOD_CHANNELS];
 
-    uint16_t portamentoNote[CHANNELS];
-    uint8_t portamentoSpeed[CHANNELS];
+    uint16_t portamentoNote[MOD_CHANNELS];
+    uint8_t portamentoSpeed[MOD_CHANNELS];
 
-    uint8_t waveControl[CHANNELS];
+    uint8_t waveControl[MOD_CHANNELS];
 
-    uint8_t vibratoSpeed[CHANNELS];
-    uint8_t vibratoDepth[CHANNELS];
-    int8_t vibratoPos[CHANNELS];
+    uint8_t vibratoSpeed[MOD_CHANNELS];
+    uint8_t vibratoDepth[MOD_CHANNELS];
+    int8_t vibratoPos[MOD_CHANNELS];
 
-    uint8_t tremoloSpeed[CHANNELS];
-    uint8_t tremoloDepth[CHANNELS];
-    int8_t tremoloPos[CHANNELS];
+    uint8_t tremoloSpeed[MOD_CHANNELS];
+    uint8_t tremoloDepth[MOD_CHANNELS];
+    int8_t tremoloPos[MOD_CHANNELS];
 };
 
 struct Mixer {
@@ -99,11 +103,11 @@ struct Mixer {
     uint16_t sampleLoopLength[SAMPLES];
     uint32_t sampleLoopEnd[SAMPLES];
 
-    uint8_t channelSampleNumber[CHANNELS];
-    uint32_t channelSampleOffset[CHANNELS];
-    uint16_t channelFrequency[CHANNELS];
-    uint8_t channelVolume[CHANNELS];
-    uint8_t channelPanning[CHANNELS];
+    uint8_t channelSampleNumber[MOD_CHANNELS];
+    uint32_t channelSampleOffset[MOD_CHANNELS];
+    uint16_t channelFrequency[MOD_CHANNELS];
+    uint8_t channelVolume[MOD_CHANNELS];
+    uint8_t channelPanning[MOD_CHANNELS];
 };
 
 // External prototype
