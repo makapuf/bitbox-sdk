@@ -20,6 +20,8 @@ endif
 HOST = $(shell uname)
 
 all: $(NAME)_$(BOARD).bin
+	
+BUILD_DIR := build/$(BOARD)
 
 VPATH=.:$(BITBOX)/kernel:$(BITBOX)/kernel/StdPeriph:$(BITBOX)/
 
