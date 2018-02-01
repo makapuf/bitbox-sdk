@@ -16,13 +16,6 @@ HOST = $(shell uname)
 $(warning compiling $(NAME) with c files $(GAME_C_FILES))
 DEFINES += EMULATOR 
 
-# get canonical Bitbox path
-BITBOX:=$(realpath $(BITBOX))
-
-BUILD_DIR := build/$(TYPE)
-
-VPATH=.:$(BITBOX)/kernel:$(BITBOX)/
-
 INCLUDES=-I$(BITBOX)/kernel/  -I$(BITBOX)
 
 # language specific (not specific to target)

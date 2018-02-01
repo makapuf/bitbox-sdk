@@ -38,8 +38,8 @@ all: emu bitbox $(EXTRA_FILES)
 
 # --- option-only targets (independent from target)
 
-# get canonical Bitbox path
-BITBOX:=$(realpath $(BITBOX))
+# get canonical Bitbox SDK path
+BITBOX:=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))..
 
 BUILD_DIR := build
 
@@ -47,9 +47,6 @@ BUILD_DIR := build
 
 SUBMAKE_ARM    = $(MAKE) -f $(BITBOX)/kernel/bitbox_arm.mk 
 SUBMAKE_POSIX  = $(MAKE) -f $(BITBOX)/kernel/bitbox_posix.mk 
-
-# Build the project for the given target
-VPATH=.:$(BITBOX)/kernel:$(BITBOX)/
 
 # Binaries
 GAME_C_FILES+=$(GAME_BINARY_FILES:%=$(BUILD_DIR)/%.c)

@@ -21,11 +21,6 @@ HOST = $(shell uname)
 
 all: $(NAME)_$(BOARD).bin
 
-# get canonical Bitbox path
-BITBOX:=$(realpath $(BITBOX))
-
-BUILD_DIR := build/$(BOARD)
-
 VPATH=.:$(BITBOX)/kernel:$(BITBOX)/kernel/StdPeriph:$(BITBOX)/
 
 INCLUDES=-I$(BITBOX)/kernel/ \
