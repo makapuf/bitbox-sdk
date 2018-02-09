@@ -1,12 +1,12 @@
 # Bitbox ARM Makefile helper.
 
-# TARGETS 
+# TARGETS
 # --------
 # clean, stlink, dfu, debug, $NAME_$BOARD.elf/bin (default)
 
 # Variables used (export them)
 # --------------
-#   BOARD= bitbox | micro | pal 
+#   BOARD= bitbox | micro | pal
 #   TYPE= sdl | test
 #   BITBOX NAME GAME_C_FILES DEFINES (VGA_MODE, VGA_BPP, ...)
 #   GAME_C_OPTS NO_USB NO_AUDIO USE_SDCARD
@@ -15,12 +15,11 @@
 
 ifndef BOARD
 	$(error "gotta define BOARD")
-endif 
+endif
 
 HOST = $(shell uname)
 
 all: $(NAME)_$(BOARD).bin
-	
 BUILD_DIR := build/$(BOARD)
 
 VPATH=.:$(BITBOX)/kernel:$(BITBOX)/kernel/StdPeriph:$(BITBOX)/
@@ -31,11 +30,12 @@ INCLUDES=-I$(BITBOX)/kernel/ \
     -I$(BITBOX)
 
 # language specific (not specific to target)
-C_OPTS = -std=c99 -g -Wall -ffast-math -fsingle-precision-constant \
+FLAGS = -g -Wall -ffast-math -fsingle-precision-constant \
     -fsigned-char -ffunction-sections -fdata-sections -funroll-loops \
-    -fomit-frame-pointer 
-    #\-flto 
-
+    -fomit-frame-pointer -Ofast $(CORTEXM4F)
+    #-flto
+CFLAGS = -std=c99 $(FLAGS)
+CXXFLAGS = -std=c++17 $(FLAGS) --no-rtti -fno-exceptions
 LD_FLAGS = -Wl,--gc-sections
 
 AUTODEPENDENCY_CFLAGS=-MMD -MF$(@:.o=.d) -MT$@
@@ -45,9 +45,10 @@ DEFINES += BOARD_$(shell echo ${BOARD} | tr '[:lower:]' '[:upper:]')
 
 CORTEXM4F=-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16\
      -march=armv7e-m -mlittle-endian -nostartfiles
-     
+
 CC=arm-none-eabi-gcc
-C_OPTS += -Ofast $(CORTEXM4F)
+CXX=arm-none-eabi-g++
+
 LD_FLAGS += $(CORTEXM4F)
 
 ifeq ($(BOARD) , micro)
@@ -55,7 +56,7 @@ ifeq ($(BOARD) , micro)
   dfu stlink: FLASH_START = 0x08000000
 else
   ifdef LINKER_RAM
-    LD_FLAGS+=-Wl,-T,$(BITBOX)/kernel/Linker_bitbox_ram.ld 
+    LD_FLAGS+=-Wl,-T,$(BITBOX)/kernel/Linker_bitbox_ram.ld
     FLASH_START = 0x20000000
   else ifdef NO_BOOTLOADER
     LD_FLAGS+=-Wl,-T,$(BITBOX)/kernel/Linker_bitbox_raw.ld
@@ -64,7 +65,7 @@ else
     LD_FLAGS+=-Wl,-T,$(BITBOX)/kernel/Linker_bitbox_loader.ld
     FLASH_START = 0x08004000
   endif
-endif 
+endif
 
 LIBS = -lm
 
@@ -76,7 +77,7 @@ KERNEL += board_$(BOARD).c \
 
 # -- Optional features
 
-# Fatfs 
+# Fatfs
 ifdef USE_SDCARD
 SDCARD_FILES := fatfs/stm32f4_lowlevel.c fatfs/stm32f4_discovery_sdio_sd.c fatfs/ff.c fatfs/diskio.c
 SDCARD_FILES += stm32f4xx_sdio.c stm32f4xx_gpio.c stm32f4xx_dma.c misc.c
@@ -98,15 +99,25 @@ KERNEL += $(USB_FILES)
 endif
 
 # Audio
-ifeq ($(filter NO_AUDIO,$(DEFINES)),)  
+ifeq ($(filter NO_AUDIO,$(DEFINES)),)
 KERNEL += audio_$(BOARD).c
 endif
 
 # -- C compilation
+CPPFLAGS = $(DEFINES:%=-D%) $(INCLUDES)
+FLAGS += $(GAME_C_OPTS) $(AUTODEPENDENCY_CFLAGS)
+CFLAGS += $(FLAGS)
+CXXFLAGS += $(FLAGS)
+
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
-	@$(CC) $(DEFINES:%=-D%) $(C_OPTS) $(INCLUDES) $(GAME_C_OPTS) $(AUTODEPENDENCY_CFLAGS) -c $< -o $@
-	@echo CC-ARM $< 
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	@echo CC-ARM $<
+
+$(BUILD_DIR)/%.o: %.cpp
+	@mkdir -p $(dir $@)
+	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
+	@echo CC-ARM $<
 
 %.bin: %.elf
 	arm-none-eabi-objcopy -O binary $^ $@
@@ -115,8 +126,13 @@ $(BUILD_DIR)/%.o: %.c
 # --- Autodependecies (headers...)
 -include $(BUILD_DIR)/*.d
 
-# -- linking 
-$(NAME)_$(BOARD).elf : $(GAME_C_FILES:%.c=$(BUILD_DIR)/%.o) $(KERNEL:%.c=$(BUILD_DIR)/%.o)
+# -- linking
+CFILES   := $(filter %.c,$(GAME_C_FILES))
+$(info CFILES $(CFILES))
+CXXFILES := $(filter %.cpp,$(GAME_C_FILES))
+OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) $(CXXFILES:%.cpp=$(BUILD_DIR)/%.o) $(KERNEL:%.c=$(BUILD_DIR)/%.o)
+
+$(NAME)_$(BOARD).elf : $(OBJFILES)
 	$(CC) $(LD_FLAGS) $^ -o $@ $(LIBS)
 	chmod -x $@
 
