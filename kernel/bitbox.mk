@@ -2,13 +2,11 @@
 
 # Variables used
 # --------------
-#   BITBOX should point to the base bitbox source dir (where this file is)
-
 #   NAME : name of the project
 #   GAME_C_FILES c files of the project
 #   GAME_C_OPTS : C language options. Those will be used for the ARM game as well as the emulator.
 
-#	DEFINES : C defines, will be added as -Dxxx to GAME_C_OPTS, you can use either
+#	DEFINES : C defines, will be added as -Dxxx to compiler options, you can use either
 #       VGA_MODE=xxx : define a vga mode.
 #		  they can be used to define specific kernel resolution. Usable values are
 #         320x240, 384x271, 400x300, 640x480, 800x600 (see kconf.h) 
