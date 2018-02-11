@@ -28,7 +28,11 @@ static uint8_t quicksin(int32_t x)
 	// r = 2n-p
 	// s = A-1-p-n
 
-	static const int qN = 14, qA= 7, qP= 15, qR= 2*qN-qP, qS= qN+qP+1-qA;
+	#define qN 14
+	#define qA 7
+	#define qP 15
+	#define qR (2*qN-qP)
+	#define qS (qN+qP+1-qA)
 
 	x= x<<(30-qN);			// shift to full s32 range (Q13->Q30)
 

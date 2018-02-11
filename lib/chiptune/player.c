@@ -53,7 +53,7 @@ const int8_t chip_sinetable[] = {
 };
 
 
-struct channel channel[MAX_CHANNELS];
+struct channel channel[8];
 
 struct ChipSong *current_song;
 
