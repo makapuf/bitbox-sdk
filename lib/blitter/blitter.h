@@ -1,15 +1,13 @@
 #pragma once
 /*
-eject object store (done) ?
 todo : add to_delete as a magic number
 introduce utlist +3 lists heads : wait_list, draw_list, past_list
 use utlist sort ?
-subobjects ? 
+subobjects ?
 py3 / clean utils
 iface c++
 sprite_set2x(tf), btc_set2x()
-lock 
-
+lock
 */
 
 #include <stdint.h>
@@ -18,11 +16,10 @@ lock
 /* Blitter : tilemap engine for bitbox.
 
 	To use it with a 8-bit interface, please define VGA_BPP=8
+    don't modify an object or add objects during a frame rendering.
 
 */
-#ifndef MAX_OBJECTS
-#define MAX_OBJECTS 64 // max objects present at the same time
-#endif
+
 typedef struct object
 {
 	// static data (typically in flash)
@@ -45,7 +42,6 @@ typedef struct object
 void blitter_init(void);
 void blitter_insert(object *o); // insert to display list
 void blitter_remove(object *o);
-// don't modify an object or add objects during a frame rendering.
 
 void blitter_frame(void); // callback for frames.
 void blitter_line(void);
@@ -53,10 +49,12 @@ void blitter_line(void);
 // creates a new object, activate it, copy from object.
 object *rect_new(int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color) __attribute__ ((warn_unused_result));
 void sprite3_insert (struct object *o, const void *sprite_data, int x, int y, int z);
+static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
+void sprite3_toggle2X(object *o); // toggle between standard and 2X mode
+void sprite3_set_solid(object *o, pixel_t color); // set solid color or 0 to reset
+
 object *btc4_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
 object *btc4_2x_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
-
-static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
 
 #define TSET_16 0
 #define TSET_32 1

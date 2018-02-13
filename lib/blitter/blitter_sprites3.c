@@ -4,23 +4,24 @@
 /* object layout in memory :
  data : raw 8/16b data (start of blits)
  a : start of raw source data
-
  b : palette if couple palette
  d : if hi u16 not zero, replace with this color. if d&1 render with size = 2x (modify w/h as needed!)
  */
 
 #include <string.h> // memcpy, memset
+#include <stdbool.h>
 #include "blitter.h"
 
 void sprite3_frame(struct object *o, int line);
-void sprite3_line_noclip(struct object *o);
-void sprite3_line_clip(struct object *o);
-void sprite3_cpl_line_clip (object *o);
-void sprite3_cpl_line_noclip (object *o);
-void sprite3_cpl_line_noclip_2X (object *o);
-void skip_line(object *o);
 
-// static void sprite3_cpl_line_solid (struct object *o);
+void sprite3_line_noclip         (struct object *o);
+void sprite3_line_clip           (struct object *o);
+void sprite3_cpl_line_clip       (struct object *o);
+void sprite3_cpl_line_noclip     (struct object *o);
+void sprite3_cpl_line_noclip_2X  (struct object *o);
+void sprite3_cpl_line_solid      (struct object *o);
+void sprite3_cpl_line_solid_clip (struct object *o);
+void skip_line                   (struct object *o);
 
 #define DATACODE_u16 0
 #define DATACODE_u8 1
@@ -85,6 +86,24 @@ void sprite3_insert(struct object *o, const void *data, int x, int y, int z)
     blitter_insert(o);
 }
 
+void sprite3_set_solid(object *o, pixel_t color)
+{
+    o->d = color << 16 | o->d & 0xffff;
+}
+
+void sprite3_toggle2X(object *o)
+{
+    if (o->d&1) { // 2X was set
+        o->w /= 2;
+        o->h /= 2;
+        o->d &= ~1;
+    } else {
+        o->w *= 2;
+        o->h *= 2;
+        o->d |= 1;
+    }
+}
+
 // read length from src, pointing at a blit header.
 static inline int read_len(uint8_t * restrict * src)
 {
@@ -101,7 +120,7 @@ static inline int read_len(uint8_t * restrict * src)
 
 void sprite3_frame(struct object *o, int start_line)
 {
-    if (o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS) { // non visible X : skip rendering
+    if (o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS) { // non visible X : skip rendering this frame
         o->line = skip_line;
         return;
     }
@@ -113,11 +132,19 @@ void sprite3_frame(struct object *o, int start_line)
     }
 
     if ( o->x < -MARGIN || o->x + (int)o->w >= VGA_H_PIXELS+MARGIN ) { // clip ?
-        o->line = o->b ? sprite3_cpl_line_clip   : sprite3_line_clip;
+        // cpl, solid or full pixels ?
+        if (o->b) { // has a palette
+            o->line = o->d & 0xffff0000 ? sprite3_cpl_line_solid_clip : sprite3_cpl_line_clip;
+        } else {
+            o->line = sprite3_line_clip;
+        }
     } else {
-        o->line = o->b ? sprite3_cpl_line_noclip : sprite3_line_noclip;
+        if (o->b) {
+            o->line = o->d & 0xffff0000 ? sprite3_cpl_line_solid : sprite3_cpl_line_noclip;
+        } else {
+            o->line = sprite3_line_noclip;
+        }
     }
-
 }
 
 void skip_line(struct object *o) {}
@@ -159,16 +186,11 @@ void sprite3_line_noclip (struct object *o)
     o->c = (uintptr_t) src;
 }
 
-// fixme join with noclip through inline
+// fixme join with noclip through inline, allow partial skips like next one
 void sprite3_line_clip (struct object *o)
 {
     uint8_t * restrict src = (uint8_t *)o->c; // fixme
     uint8_t * restrict dst = (uint8_t *)&draw_buffer[o->x];
-
-    //message("clip line %d %d\n",vga_line-o->y, o->x);
-    // fixme start with skip N times then std blit, then also unify with skipline
-
-
     while(dst < (uint8_t *)&draw_buffer[o->x+o->w]) {
         uint8_t header = *src++;
         const int nb = header & 63; // or nb bytes
@@ -212,8 +234,7 @@ void sprite3_line_clip (struct object *o)
     message("endl\n");
 }
 
-// any wide size
-void sprite3_cpl_line_noclip (object *o)
+static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, bool clip, bool solid)
 {
     // Skip to line
     struct SpriteHeader *h = (struct SpriteHeader*)o->a;
@@ -224,88 +245,29 @@ void sprite3_cpl_line_noclip (object *o)
     couple_t * restrict couple_palette = (couple_t *)o->b;
 
     uint8_t header;
-    do {
-        header=*src;
+    pixel_t solidcolor = o->d>>16;
 
-        int nb = read_len(&src);
-
-        switch (header >> 6) {
-            case BLIT_SKIP :
-                //message("skip %d\n",nb);
-                    dst += nb;
-                break;
-            case BLIT_COPY:
-                for (int i=0;i<nb/2;i++) {
-                    *(couple_t*)dst = couple_palette[*src++];
-                    dst += 2; // couple
-                }
-
-                if (nb%2) {
-                    const couple_t last = couple_palette[*src++];
-                    *dst++ = last >> 16;
-                }
-                break;
-
-            case BLIT_FILL : // fill w / u16
-                for (int i=0;i<nb/2;i++) {
-                    *(couple_t*)dst=couple_palette[*src];
-                    dst +=2;
-                }
-                if (nb%2) {
-                    *dst++ = couple_palette[*src] >> 16;
-                }
-                src+=1;
-                break;
-
-            case BLIT_BACK :
-                {
-                    const uint16_t delta = *(uint16_t*)(src);
-                    for (int i=0;i<nb/2;i++) {
-                        *(couple_t*)dst = couple_palette[(src-delta)[i]];
-                        dst+=2;
-                    }
-                    if (nb%2) {
-                        *dst++ = couple_palette[(src-delta)[nb/2]];
-                    }
+    // clip left : skip runs fixme finish partial run ?
+    if (clip) {
+        do {
+            header=*src;
+            int nb = read_len(&src);
+            dst += nb;
+            switch (header>>6) {
+                case BLIT_SKIP :
+                    break;
+                case BLIT_COPY:
+                    src += (nb+1)/2;
+                    break;
+                case BLIT_FILL : // fill w / u16
+                    src+=1;
+                    break;
+                case BLIT_BACK :
                     src+=2;
-                }
-                break;
-
-        }
-    } while (!(header & 1<<5)); // eol
-}
-
-void sprite3_cpl_line_clip (object *o)
-{
-    // Skip to line
-    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
-    const uint16_t line = o->fr*h->height+vga_line-o->ry;
-    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line];
-
-    pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
-    couple_t * restrict couple_palette = (couple_t *)o->b;
-
-    uint8_t header;
-
-    // clip left : skip runs fixme finish run ?
-    do {
-        header=*src;
-        int nb = read_len(&src);
-        dst += nb;
-        switch (header>>6) {
-            case BLIT_SKIP :
-                break;
-            case BLIT_COPY:
-                src += (nb+1)/2;
-                break;
-            case BLIT_FILL : // fill w / u16
-                src+=1;
-                break;
-            case BLIT_BACK :
-                src+=2;
-                break;
-        }
-    } while (dst<draw_buffer-MARGIN);
+                    break;
+            }
+        } while (dst<draw_buffer-MARGIN);
+    }
 
     do {
         header=*src;
@@ -317,23 +279,25 @@ void sprite3_cpl_line_clip (object *o)
                 break;
             case BLIT_COPY:
                 for (int i=0;i<nb/2;i++) {
-                    *(couple_t*)dst = couple_palette[*src++];
+                    *(couple_t*)dst = solid ? solidcolor : couple_palette[*src];
+                    src++;
                     dst += 2; // couple
                 }
 
                 if (nb%2) {
-                    const couple_t last = couple_palette[*src++];
+                    const couple_t last = solid ? solidcolor : couple_palette[*src];
+                    src++;
                     *dst++ = last >> 16;
                 }
                 break;
 
             case BLIT_FILL : // fill w / u16
                 for (int i=0;i<nb/2;i++) {
-                    *(couple_t*)dst=couple_palette[*src];
+                    *(couple_t*)dst= solid ? solidcolor : couple_palette[*src];
                     dst +=2;
                 }
                 if (nb%2) {
-                    *dst++ = couple_palette[*src] >> 16;
+                    *dst++ = solid ? solidcolor : couple_palette[*src] >> 16;
                 }
                 src+=1;
                 break;
@@ -342,19 +306,24 @@ void sprite3_cpl_line_clip (object *o)
                 {
                     const uint16_t delta = *(uint16_t*)(src);
                     for (int i=0;i<nb/2;i++) {
-                        *(couple_t*)dst = couple_palette[(src-delta)[i]];
+                        *(couple_t*)dst = solid ? solidcolor : couple_palette[(src-delta)[i]];
                         dst+=2;
                     }
                     if (nb%2) {
-                        *dst++ = couple_palette[(src-delta)[nb/2]];
+                        *dst = solid ? solidcolor : couple_palette[(src-delta)[nb/2]];
+                        dst++;
                     }
                     src+=2;
                 }
                 break;
-
         }
     } while (!(header & 1<<5) && dst < &draw_buffer[o->x+o->w]); // eol
 }
+
+void sprite3_cpl_line_clip   (object *o) { sprite3_cpl_line(o,true,  false); }
+void sprite3_cpl_line_noclip (object *o) { sprite3_cpl_line(o,false, false); }
+void sprite3_cpl_line_solid  (object *o) { sprite3_cpl_line(o,false, true); }
+void sprite3_cpl_line_solid_clip (object *o) { sprite3_cpl_line(o,false, true); }
 
 
 static inline void blit2Xcpl(pixel_t *dst, couple_t color)

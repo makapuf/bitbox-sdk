@@ -9,20 +9,20 @@
 #include "stm32f4xx.h" // profile
 #endif
 
-#if BITBOX_KERNEL != 0010 
-#error must be compiled with kernel version v0.10 
-#endif 
+#if BITBOX_KERNEL != 0010
+#error must be compiled with kernel version v0.10
+#endif
+
+#ifndef MAX_OBJECTS
+#define MAX_OBJECTS 64
+#endif
 
 extern int line_time;
 
 typedef struct {
     // list of objects blit.
-
-    object object_store[MAX_OBJECTS]; // real objects. set y to INT16_MAX for not used
-    // list of objects blit.
     object *objects[MAX_OBJECTS]; // Sorted by Y. Objects shall not be added or modified within display
     int nb_objects; // next unused object. There maybe be unused objects before.
-
 
     // active list is the list of object currently being blit.
     // an object is not active if the displayed line is before its topmost line, or after the bounding box.
