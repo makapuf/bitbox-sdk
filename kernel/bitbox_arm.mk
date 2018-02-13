@@ -35,7 +35,7 @@ FLAGS = -g -Wall -ffast-math -fsingle-precision-constant \
     -fomit-frame-pointer -Ofast $(CORTEXM4F)
     #-flto
 CFLAGS = -std=c99 $(FLAGS)
-CXXFLAGS = -std=c++17 $(FLAGS) --no-rtti -fno-exceptions
+CXXFLAGS = -std=c++14 $(FLAGS) --no-rtti -fno-exceptions
 LD_FLAGS = -Wl,--gc-sections
 
 AUTODEPENDENCY_CFLAGS=-MMD -MF$(@:.o=.d) -MT$@

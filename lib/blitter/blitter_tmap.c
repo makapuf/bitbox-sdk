@@ -258,10 +258,8 @@ void tilemap_u8_line8_8(object *o) {
 
 
 
-object *tilemap_new(const void *tileset, int w, int h, uint32_t header, const void *tilemap)
+void tilemap_insert(object *o, const void *tileset, int w, int h, uint32_t header, const void *tilemap)
 {
-    object *o = blitter_new();
-    if (!o) return 0; // error
 
     o->data = (uint32_t*)tilemap;
 
@@ -277,7 +275,6 @@ object *tilemap_new(const void *tileset, int w, int h, uint32_t header, const vo
     o->x=o->y=0;
     o->z = 200; // a little behind sprites by default
     o->frame=0;
-
 
     #if VGA_BPP==8 // 8-bit interface
 
@@ -314,8 +311,8 @@ object *tilemap_new(const void *tileset, int w, int h, uint32_t header, const vo
             break;
     }
     #endif
+    blitter_insert(o);
 
-    return o;
 }
 
 // blit a tmap inside another one.

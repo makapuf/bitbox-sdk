@@ -1,7 +1,20 @@
 #pragma once
+/*
+eject object store (done) ?
+todo : add to_delete as a magic number
+introduce utlist +3 lists heads : wait_list, draw_list, past_list
+use utlist sort ?
+subobjects ? 
+py3 / clean utils
+iface c++
+sprite_set2x(tf), btc_set2x()
+lock 
+
+*/
 
 #include <stdint.h>
 #include <bitbox.h>
+
 /* Blitter : tilemap engine for bitbox.
 
 	To use it with a 8-bit interface, please define VGA_BPP=8
@@ -9,7 +22,7 @@
 */
 #ifndef MAX_OBJECTS
 #define MAX_OBJECTS 64 // max objects present at the same time
-#endif 
+#endif
 typedef struct object
 {
 	// static data (typically in flash)
@@ -30,7 +43,7 @@ typedef struct object
 
 
 void blitter_init(void);
-object *blitter_new(void);
+void blitter_insert(object *o); // insert to display list
 void blitter_remove(object *o);
 // don't modify an object or add objects during a frame rendering.
 
@@ -38,12 +51,8 @@ void blitter_frame(void); // callback for frames.
 void blitter_line(void);
 
 // creates a new object, activate it, copy from object.
-object *object_new(const object *from) __attribute__ ((warn_unused_result));
-
 object *rect_new(int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color) __attribute__ ((warn_unused_result));
-object *linegen_new(uint32_t (*gen_couple)(int ))  __attribute__ ((warn_unused_result));
-object *sprite_new(const void *sprite_data, int x, int y, int z)  __attribute__ ((warn_unused_result));
-object *sprite3_new(const void *sprite_data, int x, int y, int z) __attribute__ ((warn_unused_result));
+void sprite3_insert (struct object *o, const void *sprite_data, int x, int y, int z);
 object *btc4_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
 object *btc4_2x_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
 
@@ -65,7 +74,7 @@ static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->
 #define TILEMAP_3232u8 TMAP_HEADER(32,32,TSET_16, TMAP_U8)
 #define TILEMAP_6464u832 TMAP_HEADER(32,32,TSET_32,TMAP_U8)
 
-object *tilemap_new (const void *tileset, int w, int h, uint32_t header, const void *tilemap) __attribute__ ((warn_unused_result));
+void tilemap_insert (object * o, const void *tileset, int w, int h, uint32_t header, const void *tilemap);
 /*
 	- tileset is a list of 16x16 u16 pixels. It will be 1-indexed by tilemap (or 32x32)
     - width and height are displayed sizes, can be bigger/smaller than tilemap, in which case it will loop

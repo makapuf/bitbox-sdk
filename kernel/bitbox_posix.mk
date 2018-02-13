@@ -73,7 +73,7 @@ CPPFLAGS += $(DEFINES:%=-D%) $(INCLUDES)
 FLAGS 	 += $(GAME_C_OPTS) $(AUTODEPENDENCY_CFLAGS)
 
 CFLAGS = -std=c99  $(FLAGS)
-CXXFLAGS = -std=c++17 $(FLAGS)
+CXXFLAGS = -std=c++14 $(FLAGS)
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)

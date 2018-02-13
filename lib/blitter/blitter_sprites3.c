@@ -49,11 +49,9 @@ struct SpriteHeader {
     uint16_t data[]; // frame_start indices, then len+couple_palette[len] if couples, then data
 };
 
-struct object *sprite3_new(const void *data, int x, int y, int z)
+// fixme wait for sync ?
+void sprite3_insert(struct object *o, const void *data, int x, int y, int z)
 {
-	object *o = blitter_new();
-    if (!o) return 0; // error : no room left
-
     const struct SpriteHeader *h=data;
 
     if (h->magic!=0xB17B) {
@@ -84,7 +82,7 @@ struct object *sprite3_new(const void *data, int x, int y, int z)
     o->fr=0;
     o->d=0; // reset MODE
 
-    return o;
+    blitter_insert(o);
 }
 
 // read length from src, pointing at a blit header.
