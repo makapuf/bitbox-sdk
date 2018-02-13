@@ -8,7 +8,7 @@
  */
 
 #include <string.h>
-#include "mod32.h"
+#include "mod32_internal.h"
 #include <fatfs/ff.h>
 #include <bitbox.h>
 #include <stdlib.h> // rand
@@ -768,6 +768,26 @@ void load_mod(const void* modfile)
     }
 
     mod32_player_reset();
+}
+
+// play individual note
+void mod_play_note(uint8_t sample_id, uint8_t channel, uint8_t volume, uint8_t note)
+{
+    const struct Sample *sample = &mod->samples[sample_id];
+
+    mixer.sampleBegin[channel] = 0;
+    mixer.sampleEnd[channel] = sample->length;
+    mixer.sampleLoopLength[channel] =0;
+    mixer.channelSampleNumber[channel] = sample_id;
+    mixer.channelSampleOffset[channel] = 0;
+    mixer.channelFrequency[channel] = mod32_player.amiga / amigaPeriods[note];
+    mixer.channelVolume[channel] = volume;
+}
+
+void mod_jumpto (uint8_t order)
+{
+    mod32_player.orderIndex = order;
+    mod32_player.row = 0;
 }
 
 
