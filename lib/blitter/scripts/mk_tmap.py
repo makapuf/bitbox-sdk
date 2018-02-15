@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
 Simple TMX to TMAP export
 
@@ -68,7 +68,7 @@ def out_objects(tmap, basefile, of=None) :
         if name[0]=='_' : continue # skip
         objgroups.append((name,index))
         
-        if of : print "#define objgroup_%s_%s %d"%(tmap_name, name, index)
+        if of : print("#define objgroup_%s_%s %d"%(tmap_name, name, index))
         for obj in objgroup.findall('object'):
            
             oid = int(obj.get('gid'))
@@ -122,16 +122,16 @@ def out_layers(tmap,of=None,codec='u8') :
         elif data.get('encoding')=='base64' and data.get('compression')=='zlib' :
             indices = array.array('I',data.text.decode('base64').decode('zlib'))
         else :
-            raise ValueError,'Unsupported layer encoding :'+data.get('encoding')
+            raise ValueError('Unsupported layer encoding :'+data.get('encoding'))
 
 
         if codec=='u8' and max(indices)>=256 : 
-            raise ValueError,"size of index type too small : %d tiles used"%max(indices)
+            raise ValueError("size of index type too small : %d tiles used"%max(indices))
         assert len(indices) == lw*lh, "not enough or too much data : %d != %d"%(lw*lh, len(tidx))
 
         # output data to binary
         if of :
-            print "#define layer_%s_%s %d"%(tmap_name, name, index)
+            print("#define layer_%s_%s %d"%(tmap_name, name, index))
             array.array(out_code,indices).tofile(of)
         index += 1
 
@@ -142,22 +142,22 @@ def out_layers(tmap,of=None,codec='u8') :
     return max_indices, min_indices
 
 def read_tmap(file) : 
-    print "showing info about map",file
+    print("showing info about map",file)
     f = open(file,'rb')
 
     h_head,h_w,h_h,h_layers,h_format = struct.unpack('HHHBB', f.read(8))
-    print "Header     : 0x%x"%h_head
-    print "Map Size   : %dx%d - %d"%(h_w,h_h,h_w*h_h)
-    print "Format     : %d - %s"%(h_format, MAP_FORMATS[h_format])
-    print "Map Layers : %d"%h_layers
+    print("Header     : 0x%x"%h_head)
+    print("Map Size   : %dx%d - %d"%(h_w,h_h,h_w*h_h))
+    print("Format     : %d - %s"%(h_format, MAP_FORMATS[h_format]))
+    print("Map Layers : %d"%h_layers)
 
-    print ' ---'
+    print(' ---')
 
     for i in range(h_layers) :
         arr=array.array('BH'[h_format-1])
         arr.fromfile(f,h_h*h_w)
-        print "layer %d : "%i,arr[:20],'...'
-    print ' ---'
+        print("layer %d : "%i,arr[:20],'...')
+    print(' ---')
     group = 0
     while True : 
         x,y,uid,v,v2,v3 = struct.unpack('2h4B',f.read(8))
@@ -165,8 +165,8 @@ def read_tmap(file) :
             group+=1
             if v==255 : break # eof marker
         else : 
-            print "object group:%d x:%3d y:%3d oid:%d value:%d"%(group,x,y,uid,v)
-    print ' ---'
+            print("object group:%d x:%3d y:%3d oid:%d value:%d"%(group,x,y,uid,v))
+    print(' ---')
 
 
 if __name__=='__main__' : 
@@ -183,7 +183,7 @@ if __name__=='__main__' :
     infile = open(args.filename,'r')
 
     def usage(str) : 
-        print >>sys.stderr, " Usage error :", str
+        print(" Usage error :", str, file=sys.stderr)
         sys.exit(2)
 
     if args.format not in MAP_FORMATS : usage('format not in '+','.join(MAP_FORMATS))
@@ -193,7 +193,7 @@ if __name__=='__main__' :
     tmap_name = args.filename.rsplit('.',1)[0].rsplit('/',1)[-1]
     of = open(tmap_name+'.map','wb')
 
-    print >>sys.stderr, " Generating tilemap file %s from %s using format %s"%(of.name, args.filename, args.format)
+    print(" Generating tilemap file %s from %s using format %s"%(of.name, args.filename, args.format), file=sys.stderr)
 
     m_idx,M_idx = out_layers (tmap, of, args.format)
 
@@ -206,19 +206,19 @@ if __name__=='__main__' :
         tsB, _ = tid2ts(tmap,M_idx,args.filename)
         if tsA != tsB : 
             # not really an error, just an info
-            print >>sys.stderr, ' stderr from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA,tsB)
-        print "#define %s_MAP  \"%s_map\""%(tmap_name, tmap_name)
-        print "#define %s_TSET \"%s_tset\""%(tmap_name, tsA)
-    print
+            print(' stderr from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA,tsB), file=sys.stderr)
+        print("#define %s_MAP  \"%s_map\""%(tmap_name, tmap_name))
+        print("#define %s_TSET \"%s_tset\""%(tmap_name, tsA))
+    print()
 
     objgroups, unique_states = out_objects(tmap, args.filename, of)
     if objgroups : 
-        print '#define %s_OBJECT_GROUPS \\'%tmap_name
+        print('#define %s_OBJECT_GROUPS \\'%tmap_name)
         for name, index in objgroups : 
-            print "    X(%s,%s) \\"%(name,index)
+            print("    X(%s,%s) \\"%(name,index))
     if unique_states : 
-        print '#define %s_OBJECTS \\'%tmap_name
+        print('#define %s_OBJECTS \\'%tmap_name)
         for ts,typ in unique_states : 
             if typ==None : usage('Referenced tile in %s has no type !'%ts)
-            print "    X(%s,%s) \\"%(ts,typ)
-    print
+            print("    X(%s,%s) \\"%(ts,typ))
+    print()

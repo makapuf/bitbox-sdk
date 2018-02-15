@@ -46,6 +46,8 @@
 #define VGA_V_PIXELS 480
 #endif
 
+#define VGA_V_BLANK (VGA_V_PIXELS+VGA_V_SYNC)
+
 #ifndef NO_AUDIO
 
 #ifndef BITBOX_SAMPLERATE

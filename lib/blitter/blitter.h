@@ -16,7 +16,7 @@ lock
 /* Blitter : tilemap engine for bitbox.
 
 	To use it with a 8-bit interface, please define VGA_BPP=8
-    don't modify an object or add objects during a frame rendering.
+    don't modify an object or add, or remove objects during active video ! (ie if vga_line<VGA_H_PIXELS)
 
 */
 
@@ -29,17 +29,16 @@ typedef struct object
 	int16_t z;
 
 	// live data (typically in RAM, stable per frame)
-	int32_t x,y,ry; // ry is real Y, while y is wanted y, which will be activated next frame.
-	uint32_t w,h,fr; // h is one frame height, not full height, frame is frame id
+	int16_t x,y; // ry is real Y, while y is wanted y, which will be activated next frame.
+	uint16_t w,h,fr; // object size, frame is frame id
 
 	uintptr_t a,b,c,d; // various 32b used for each blitter as extra parameters or internally
 
 	// inline single linked lists (engine internal)
-	struct object *activelist_next;
+	struct object *next;
 } object;
 
 
-void blitter_init(void);
 void blitter_insert(object *o); // insert to display list
 void blitter_remove(object *o);
 
@@ -47,8 +46,9 @@ void blitter_frame(void); // callback for frames.
 void blitter_line(void);
 
 // creates a new object, activate it, copy from object.
-object *rect_new(int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color) __attribute__ ((warn_unused_result));
-void sprite3_insert (struct object *o, const void *sprite_data, int x, int y, int z);
+void rect_insert(struct object *o, int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color);
+
+void sprite3_load (struct object *o, const void *sprite_data, int x, int y, int z);
 static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
 void sprite3_toggle2X(object *o); // toggle between standard and 2X mode
 void sprite3_set_solid(object *o, pixel_t color); // set solid color or 0 to reset

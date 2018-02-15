@@ -46,7 +46,7 @@ static inline void tilemap_u8_line(object *o, const unsigned int tilesize)
 
     // --- line related
     // line inside tilemap (pixel), looped.
-    int sprline = (vga_line-o->ry) % (tilemap_h*tilesize);
+    int sprline = (vga_line-o->y) % (tilemap_h*tilesize);
     // offset from start of tile (in lines)
     int offset = sprline%tilesize;
     // pointer to the beginning of the tilemap line
@@ -124,7 +124,7 @@ void tilemap_u8_line_16(object *o) {
 
     // --- line related
     // line inside tilemap (pixel), looped.
-    int sprline = (vga_line-o->ry) % (tilemap_h*tilesize);
+    int sprline = (vga_line-o->y) % (tilemap_h*tilesize);
     // offset from start of tile (in lines)
     int offset = sprline%tilesize;
     // pointer to the beginning of the tilemap line
@@ -199,7 +199,7 @@ __attribute__((always_inline)) static inline void tilemap_u8_line8(object *o, co
 
     // --- line related
     // line inside tilemap (pixel), looped.
-    int sprline = (vga_line-o->ry) % (tilemap_h*tilesize);
+    int sprline = (vga_line-o->y) % (tilemap_h*tilesize);
     // offset from start of tile (in lines)
     int offset = sprline%tilesize;
     // pointer to the beginning of the tilemap line

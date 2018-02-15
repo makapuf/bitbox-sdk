@@ -51,7 +51,7 @@ struct SpriteHeader {
 };
 
 // fixme wait for sync ?
-void sprite3_insert(struct object *o, const void *data, int x, int y, int z)
+void sprite3_load(struct object *o, const void *data, int x, int y, int z)
 {
     const struct SpriteHeader *h=data;
 
@@ -75,6 +75,7 @@ void sprite3_insert(struct object *o, const void *data, int x, int y, int z)
     }
 
     o->frame = sprite3_frame;
+    o->line = skip_line; // skip now until frame decides which one to use
 
     // default values
     o->x=x;
@@ -88,7 +89,7 @@ void sprite3_insert(struct object *o, const void *data, int x, int y, int z)
 
 void sprite3_set_solid(object *o, pixel_t color)
 {
-    o->d = color << 16 | o->d & 0xffff;
+    o->d = color << 16 | (o->d & 0xffff);
 }
 
 void sprite3_toggle2X(object *o)
@@ -98,9 +99,11 @@ void sprite3_toggle2X(object *o)
         o->h /= 2;
         o->d &= ~1;
     } else {
-        o->w *= 2;
-        o->h *= 2;
-        o->d |= 1;
+        if (o->b) {// for now only with cpls
+            o->w *= 2;
+            o->h *= 2;
+            o->d |= 1;
+        }
     }
 }
 
@@ -126,7 +129,7 @@ void sprite3_frame(struct object *o, int start_line)
     }
 
     // select if clip or noclip (choice made each frame)
-    if (o->d & 1) {  // 2X rendering
+    if (o->d & 1) {  // 2X rendering - only for couples for now
         o->line = sprite3_cpl_line_noclip_2X; // fixme clipping
         return;
     }
@@ -151,7 +154,10 @@ void skip_line(struct object *o) {}
 
 void sprite3_line_noclip (struct object *o)
 {
-    uint8_t * restrict src = (uint8_t *)o->c; // fixme
+    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    const uint16_t line = o->fr*h->height+vga_line-o->y;
+    uint8_t * restrict src = (uint8_t*) o->data + h->data[line];
+
     pixel_t * restrict dst = &draw_buffer[o->x];
     uint8_t header;
     uint16_t backref;
@@ -183,13 +189,15 @@ void sprite3_line_noclip (struct object *o)
                 break;
         }
     } while (!(header & 1<<5));
-    o->c = (uintptr_t) src;
 }
 
 // fixme join with noclip through inline, allow partial skips like next one
 void sprite3_line_clip (struct object *o)
 {
-    uint8_t * restrict src = (uint8_t *)o->c; // fixme
+    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    const uint16_t line = o->fr*h->height+vga_line-o->y;
+    uint8_t * restrict src = (uint8_t*) o->data + h->data[line]; // fixme calc only at frame !
+
     uint8_t * restrict dst = (uint8_t *)&draw_buffer[o->x];
     while(dst < (uint8_t *)&draw_buffer[o->x+o->w]) {
         uint8_t header = *src++;
@@ -206,7 +214,6 @@ void sprite3_line_clip (struct object *o)
                 src+=nb;
                 break;
             case BLIT_BACK : // back reference as nb u16 :4, backref:10
-                message("backref %d cpls\n",nb>>3);
                 if (dst>(uint8_t*)&draw_buffer[-MARGIN]) {
                     const int delta = ((header&3)<<8 | *src)-2;
                     const int nnb = (nb>>3)*2;
@@ -230,22 +237,20 @@ void sprite3_line_clip (struct object *o)
                 break;
         }
     }
-    o->c = (uintptr_t) src;
-    message("endl\n");
 }
 
 static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, bool clip, bool solid)
 {
     // Skip to line
     struct SpriteHeader *h = (struct SpriteHeader*)o->a;
-    const uint16_t line = o->fr*h->height+vga_line-o->ry;
-    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line];
+    const uint16_t line = o->fr*h->height+vga_line-o->y;
+    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line]; // fixme calc only at frame
 
     pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
     couple_t * restrict couple_palette = (couple_t *)o->b;
 
     uint8_t header;
-    pixel_t solidcolor = o->d>>16;
+    couple_t solidcolor = (o->d>>16) * 0x10001;
 
     // clip left : skip runs fixme finish partial run ?
     if (clip) {
@@ -342,7 +347,7 @@ void sprite3_cpl_line_noclip_2X (object *o) {
 
     // Skip to line
     struct SpriteHeader *h = (struct SpriteHeader*)o->a;
-    const uint16_t line = o->fr*h->height+(vga_line-o->ry)/2;
+    const uint16_t line = o->fr*h->height+(vga_line-o->y)/2;
     uint8_t *  restrict src=(uint8_t*) o->data + h->data[line];
 
     pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
@@ -403,7 +408,4 @@ void sprite3_cpl_line_noclip_2X (object *o) {
 
         }
     } while (!(header & 1<<5)); // eol
-    // if we're on an even line, reset (ie will draw again)
-    if ((vga_line-o->y)%2)
-        o->c=(intptr_t)src;
 }

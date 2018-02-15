@@ -20,205 +20,120 @@
 extern int line_time;
 
 typedef struct {
-    // list of objects blit.
-    object *objects[MAX_OBJECTS]; // Sorted by Y. Objects shall not be added or modified within display
-    int nb_objects; // next unused object. There maybe be unused objects before.
-
-    // active list is the list of object currently being blit.
-    // an object is not active if the displayed line is before its topmost line, or after the bounding box.
-    object *activelist_head; // top of the active list
-    int next_to_activate; // next object to put in active list
-
+    object *toactivate_head; // top of display list, sorted by Y. not yet active.
+    object *active_head;     // top of the active list (currently active on this line), sorted by Z.
+    object *inactive_head;   // inactive objects, to be activated next frame. this list is not sorted- shall be almost
 } Blitter;
 
-Blitter blt CCM_MEMORY;
+Blitter blt CCM_MEMORY = {0,0,0} ;
 
-static int blitter_initialized = 0;
+static inline int cmp_y(object *o1, object *o2) { return o1->y < o2->y ? -1 : (o1->y == o2->y ? 0 : 1) ; }
+static inline int cmp_z(object *o1, object *o2) { return o1->z > o2->z ? -1 : (o1->z == o2->z ? 0 : 1) ; }
 
-void blitter_init()
+
+static void __attribute__((unused)) blitter_print_state(char *str)
 {
-    // initialize empty objects array
-    memset(&blt,0,sizeof(blt)); // needed in CCM_RAM
-    blt.nb_objects = 0; // first unused is first.
-    blitter_initialized=1;
+    message(" --- %s : frame %d line %d \n",str,vga_frame, vga_line);
+    message("to activate: ");   for ( object *o=blt.toactivate_head;o; o = o->next) message("%x - ", o -0x10000); message("\n");
+    message("active: ");        for ( object *o=blt.active_head    ;o; o = o->next) message("%x - ", o -0x10000); message("\n");
+    message("inactive: ");      for ( object *o=blt.inactive_head  ;o; o = o->next) message("%x - ", o -0x10000); message("\n");
+}
+// insert to blitter. not yet active
+void blitter_insert(struct object *o)
+{
+    LL_PREPEND(blt.inactive_head, o); // prepend since we don't car of order and it's faster
 }
 
-// return ptr to new object
-// append to end of list ; list ends up unsorted now
-void blitter_insert(struct object *o) // insert to display list
-{
-    // auto initialize in case it wasn't done
-    if (!blitter_initialized)
-        blitter_init();
-
-    if (blt.nb_objects<MAX_OBJECTS) {
-        blt.objects[blt.nb_objects++]=o; // index of free object IN !
-    } else {
-        message ("Object memory full, too many objects ! Increase MAX_OBJECTS in lib/blitter.h\n");
-        die(1,3); // die immediately
-    }
-}
-
+// remove only from inactive, it shall not be in active or toactivate when removing.
 void blitter_remove(object *o)
 {
-    // ! Should do that between frames (only frame-based variables will be updated)
-    o->y = INT16_MAX;
+    LL_DELETE(blt.inactive_head, o);
 }
-
-// http://en.wikipedia.org/wiki/Insertion_sort
-// insertion sort of object ptr array, sorted by Y. Simplest form, just sorting.
-void blitter_sort_objects_y()
-{
-
-    // consider empty values as bigger than anything (Y = INT16_MAX)
-    object *valueToInsert;
-    int holePos;
-    int real_nbobjects = blt.objects[0]->ry==INT16_MAX ? 0 : 1; // count the real number of objects. start at 0 or 1
-
-    // The values in blt.objects[i] are checked in-order, starting at the second one
-    for (int i=1;i<blt.nb_objects;i++)
-    {
-        // at the start of the iteration, objects[0..i-1] are in sorted order
-        // this iteration will insert blt.objects[i] into that sorted order
-        // save blt.objects[i], the value that will be inserted into the array on this iteration
-        valueToInsert = blt.objects[i];
-
-        // now mark position i as the hole; blt.objects[i]=blt.objects[holePos] is now considered empty
-        holePos=i;
-
-        // keep moving the hole down until the valueToInsert is larger than
-        // what's just below the hole or the hole has reached the beginning of the array
-        // null pointers are considered larger than anything (except null pointers but we've made the test already)
-
-        //while (holePos > 0 && (!blt.objects[holePos - 1] || valueToInsert->y < blt.objects[holePos - 1]->y))
-        while (holePos > 0 && (valueToInsert->ry < blt.objects[holePos - 1]->ry))
-        { //value to insert doesn't belong where the hole currently is, so shift
-            blt.objects[holePos] = blt.objects[holePos - 1]; //shift the larger value up
-            holePos -= 1;       //move the hole position down
-        }
-
-        // hole is in the right position, so put valueToInsert into the hole
-        blt.objects[holePos] = valueToInsert;
-
-        if (valueToInsert->ry != INT16_MAX) real_nbobjects+=1; // count number of real objects (skipped the holes)
-
-        // blt.objects[0..i] are now in sorted order
-    }
-    blt.nb_objects=real_nbobjects;
-}
-
-void activelist_add(object *o)
-// insert sorted
-{
-    object **head = &blt.activelist_head;
-    // find insertion point
-    while (*head && (*head)->z > o->z)
-        head = &(*head)->activelist_next;
-
-    // insert effectively
-    o->activelist_next = *head;
-    *head = o;
-}
-
-
 
 void graph_vsync()
 {
-    if (!blitter_initialized)
-        return; // ensure initiliaztion is done
+    if (vga_odd)
+        return;
 
-    if (vga_odd) 
-        return; 
-
-    object *o;
+    struct object *o;
 
     switch (vga_line) {
-        case VGA_V_PIXELS+2 : 
-            // transfer y to real y ry    
-            for (int i=0;i<blt.nb_objects;i++) {
-                o=blt.objects[i];
-                if (o->y==INT16_MAX || o->y+(int)o->h>=0)
-                    o->ry = o->y;
-                else
-                    o->ry = VGA_V_PIXELS+1;
-                    // if hidden above screen, hide below screen (thus activation algorithms will never run)
-            }
+        case VGA_V_BLANK-3 :
+            // append active, inactive lists to to_activate
+            LL_CONCAT(blt.toactivate_head, blt.active_head);
+            LL_CONCAT(blt.toactivate_head, blt.inactive_head);
+            // empty them
+            blt.active_head=0;
+            blt.inactive_head=0;
+            // sort to activate along Y (should be almost sorted)
+            LL_SORT(blt.toactivate_head, cmp_y);
             break;
-        case VGA_V_PIXELS+3 : 
-            // ensure objectlist is sorted by y
-            blitter_sort_objects_y();
-            break;
-        case VGA_V_PIXELS+4 : 
-            // reset activelist, next to blit
-            blt.activelist_head = (object*)0;
-            blt.next_to_activate = 0;
-
-            // rewind all objects. nb objects is up to date (no holes in objlist, since we just sorted them)
-            for (int i=0;i<blt.nb_objects;i++)
-            {
-                o=blt.objects[i];
+        case VGA_V_BLANK-2 :
+            // rewind all objects to activate
+            LL_FOREACH(blt.toactivate_head, o) {
                 if (o->frame)
-                    o->frame(o,o->ry<0?-o->ry:0); // first line is -y if negative
+                    o->frame(o,o->y<0?-o->y:0); // first line is -y if negative
             }
             break;
     }
 }
 
 
-
-
-void graph_line()
+// drop past objects from active list, remove them from active list + move them to inactive list
+static inline void drop_old_objects ()
 {
-    if (!blitter_initialized)
-        return; // ensure initiliaztion is done
-
-    // persist between calls so that one line can continue blitting next frame.
-    static object *o;
-
-    if (!vga_odd) { // only on even lines
-    // drop past objects from active list.
     object *prev=NULL;
-    for (object *o=blt.activelist_head;o;o=o->activelist_next)
+    for (object *o=blt.active_head;o;)
     {
-        if (vga_line >= o->ry+o->h)
-        {
-            // remove this object from active list
-            if (o==blt.activelist_head)
-            {   // change head ?
-                blt.activelist_head = o->activelist_next;
+        object *next = o->next;
+        if ((int)vga_line >= o->y+(int)o->h) {
+//            message ("XXXX dropping %x line %d\n",o -0x10000, vga_line);
+            // remove this object from active list, append to inactive
+            // no need to scan to find previous, we just got it.
+            if (o==blt.active_head) {
+                blt.active_head = next; // change head, still no previous
             } else {
-                prev->activelist_next=o->activelist_next;
+                prev->next=next;  // just drop from list
             }
+            LL_PREPEND(blt.inactive_head, o); // change o-next
+            // do not change prev
         } else {
             prev=o;
         }
+        o = next;
     }
+}
+
+void graph_line()
+{
+    // persist between calls so that one line can continue blitting objects next semi-line. cut is done at z=128
+    static object *o;
+
+    if (!vga_odd) { // only on even lines
 
     // add new active objects
-    while (blt.next_to_activate<blt.nb_objects && (int)vga_line>=blt.objects[blt.next_to_activate]->ry)
+    while (blt.toactivate_head && (int)vga_line>=blt.toactivate_head->y)
     {
-        // only if not hidden (Y too negative)
-        activelist_add(blt.objects[blt.next_to_activate]);
-        //printf("activate %d\n",blt.objects[blt.next_to_activate]->x);
-        blt.next_to_activate++;
+        object *next = blt.toactivate_head->next;
+        LL_INSERT_INORDER(blt.active_head,blt.toactivate_head, cmp_z); // modifies head->next
+        blt.toactivate_head = next; // remove head from list, take next
     }
 
-    // now trigger each activelist, in Z descending order
-    for (o=blt.activelist_head;o;o=o->activelist_next)
-    {
+    drop_old_objects(); // also drops just added but too late
+
+    // now trigger each element of activelist, in Z descending order
+    LL_FOREACH(blt.active_head,o) {
         #ifdef VGA_SKIPLINE // multiline blit
-        if (o->z<128) break; // stop here, will finish on next line
+        if (o->z<128) break; // stop here, will finish on odd line
         #endif
-        if (vga_line<o->ry+o->h) // XXX when/why does that not arrive ?
-            o->line(o);
+        o->line(o);
     }
 
-    } else {
+    } else { // odd
         // continue with o
-        for (;o;o=o->activelist_next)
+        for (;o;o=o->next)
             o->line(o);
     }
-
 }
 
 
@@ -272,8 +187,7 @@ void color_blit(object *o)
     #endif
 }
 
-void rect_init(object *o, int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color)
-// faire un sprite RLE ?
+void rect_insert(struct object *o, int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color)
 {
     o->x=x; o->y=y; o->z=z;
     o->w=w; o->h=h;
@@ -282,5 +196,6 @@ void rect_init(object *o, int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, 
 
     o->frame=0;
     o->line=color_blit;
+    blitter_insert(o);
 }
 

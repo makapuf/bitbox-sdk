@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 TSET file format : 
@@ -24,7 +24,7 @@ TILESIZES = (8,16)
 
 def export_tset(name, tilesize, img, palette_type, maxtile) : 
     "tsx export to tileset tset file"
-    print >>sys.stderr,' - writing',name+'.tset'
+    print(' - writing',name+'.tset', file=sys.stderr)
 
     src = Image.open(img).convert('RGBA')
     w,h = src.size
@@ -35,7 +35,7 @@ def export_tset(name, tilesize, img, palette_type, maxtile) :
         datacode = DATA_u16
         data = tuple(rgba2u16(*c) for c in src.getdata())
     elif palette_type == 'COUPLES' : 
-        raise NotImplemented,"couples"
+        raise NotImplemented("couples")
     else : 
         if palette_type=='MICRO' : 
             palette = gen_micro_pal()
@@ -56,7 +56,7 @@ def export_tset(name, tilesize, img, palette_type, maxtile) :
         # tiles
         t_w = w//tilesize
         for tile in range(nbtiles) : 
-            tile_x, tile_y = tile%t_w, tile/t_w
+            tile_x, tile_y = tile%t_w, tile//t_w
             for row in range(tilesize) :
                 idx = (tile_y*tilesize+row)*w + tile_x*tilesize
                 pixdata[idx:idx+tilesize].tofile(of)
@@ -73,7 +73,7 @@ if __name__=='__main__' :
     args = parser.parse_args()
 
     def usage(str) : 
-        print >>sys.stderr, "Usage error :", str
+        print("Usage error :", str, file=sys.stderr)
         sys.exit(2)
 
     file_name,file_ext = args.file.rsplit('.',1)
