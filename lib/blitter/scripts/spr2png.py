@@ -91,7 +91,7 @@ class Sprite :
             while True : # fill line
                 bc,bl,beol = next(self.read_blit())
                 if DEBUG : 
-                    print ['skip','fill','data','copy'][bc],bl,'eol:', beol,'pos:',x,y
+                    print (['skip','fill','data','copy'][bc],bl,'eol:', beol,'pos:',x,y)
 
                 if bc==CODE_DATA : 
                     pixels = self.read_data(bl)
@@ -119,7 +119,7 @@ class Sprite :
                             data[x+bl-1,y]=color[0]
 
                     else : 
-                        raise ValueError, 'unknown datacode'
+                        raise ValueError('unknown datacode')
 
                 elif bc == CODE_SKIP : 
                     pass
@@ -160,7 +160,7 @@ class Sprite :
 
 if __name__=='__main__' : 
     s = Sprite(sys.argv[1]) 
-    print s
+    print (s)
     s.unpack()
     s.img.save(sys.argv[1]+'.png')
 

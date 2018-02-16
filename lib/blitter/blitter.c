@@ -47,7 +47,8 @@ void blitter_insert(struct object *o)
 // remove only from inactive, it shall not be in active or toactivate when removing.
 void blitter_remove(object *o)
 {
-    LL_DELETE(blt.inactive_head, o);
+    if (blt.inactive_head)   LL_DELETE(blt.inactive_head, o);
+    if (blt.toactivate_head) LL_DELETE(blt.toactivate_head, o);
 }
 
 void graph_vsync()
@@ -87,7 +88,6 @@ static inline void drop_old_objects ()
     {
         object *next = o->next;
         if ((int)vga_line >= o->y+(int)o->h) {
-//            message ("XXXX dropping %x line %d\n",o -0x10000, vga_line);
             // remove this object from active list, append to inactive
             // no need to scan to find previous, we just got it.
             if (o==blt.active_head) {
