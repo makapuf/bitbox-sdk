@@ -53,8 +53,8 @@ static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->
 void sprite3_toggle2X(object *o); // toggle between standard and 2X mode
 void sprite3_set_solid(object *o, pixel_t color); // set solid color or 0 to reset
 
-object *btc4_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
-object *btc4_2x_new (const uint32_t *btc, int16_t x, int16_t y, int16_t z) __attribute__ ((warn_unused_result));
+void btc4_insert    (object * o, const uint32_t *btc, int16_t x, int16_t y, int16_t z);
+void btc4_2x_insert (object * o, const uint32_t *btc, int16_t x, int16_t y, int16_t z);
 
 #define TSET_16 0
 #define TSET_32 1
