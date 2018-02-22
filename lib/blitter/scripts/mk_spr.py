@@ -72,7 +72,7 @@ import re
 
 from utils import *
 
-DEBUG=False
+DEBUG=True
 VERBOSE_SPR=False # explicits blits for sprite encoding
 
 class Encoder :
@@ -182,9 +182,9 @@ class Encoder :
         CODE_REF  = 3
 
         print(' ** stats')
-        print(len(self.blits),'blits')
-        print(sum(1 for bl in self.blits if bl[1]==None ),'skips')
-        print(sum(1 for bl in self.blits if type(bl[1])==int ),'fills')
+        print(len(self.blits),'blits: ',end='')
+        print(sum(1 for bl in self.blits if bl[1]==None ),'skips',end='')
+        print(sum(1 for bl in self.blits if type(bl[1])==int ),'fills',end='')
         print(sum(1 for bl in self.blits if type(bl[1])==str ),'copy, size=',sum(len(x) for x in self.blits if type(x[1]==str)))
         print(sum(1 for bl in self.blits if bl[2]),'lines')
         uniq_data= set(x[1] for x in self.blits if type(x[1])==str)
@@ -244,7 +244,6 @@ class Encoder :
             [len(self.palette)]+[rgba2u16(*c[4:])<<16 | rgba2u16(*c[:4]) for c in self.palette ]
         ).tofile(of)
 
-
     def prepare(self) :
         self.cutlines() # n, None / [rgba...] blits , eol
         self.encode()   # n, none / [rgba u16/8/cpl refs], eol, creates self.palette
@@ -253,7 +252,6 @@ class Encoder :
         self.strblits() # n, None, color, string, eol
 
         self.generate_bin() # self.index, self.bindata (including palette if code = cpl)
-
 
 class Encoder_u16 (Encoder) :
     datacode = DATA_u16
@@ -264,21 +262,19 @@ class Encoder_u16 (Encoder) :
 class Encoder_u8 (Encoder)  :
     datacode = DATA_u8
     def __init__(self, frames, palette_type, hitbox) :
-        if palette_type=='MICRO' :
-            self.palette=gen_micro_pal()
-        else :
-            self.palette=Image.open(palette)
         Encoder.__init__(self,frames,hitbox)
+        if palette_type=='MICRO' :
+            self.palette8=gen_micro_pal()
+        else :
+            self.palette8=Image.open(palette)
+
+        # convert to this 8bpp palette, keeping transparency
+        self.src=quantize_alpha(self.src,self.palette8).convert('RGBA')
 
     def encode(self) :
-        # convert to this 8bpp palette, keeping transparency
-        img=quantize_alpha(self.src,self.palette)
-        if DEBUG: img.save('_debug.png')
-        data = list(img.getdata())
-        transparent= img.info['transparency']
-        cut_lines
-
-        return data,self.palette
+        pi = iter(self.palette8.getpalette()) # invert palette
+        invpal = {(next(pi),next(pi),next(pi),255) : i for i in range(256) }
+        self.blits = [ (bl[0],[invpal[c] for c in bl[1]], bl[2]) if type(bl[1])==list else bl for bl in self.blits ]
 
 class Encoder_cpl (Encoder) :
     datacode = DATA_cpl
