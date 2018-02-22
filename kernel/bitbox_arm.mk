@@ -8,7 +8,7 @@
 # --------------
 #   BOARD= bitbox | micro | pal
 #   TYPE= sdl | test
-#   BITBOX NAME GAME_C_FILES DEFINES (VGA_MODE, VGA_BPP, ...)
+#   BITBOX NAME GAME_C_FILES GAME_BINARY_FILES DEFINES (VGA_MODE, VGA_BPP, ...)
 #   GAME_C_OPTS NO_USB NO_AUDIO USE_SDCARD
 # More arcane defines :
 #   USE_SD_SENSE DISABLE_ESC_EXIT KEYB_FR
@@ -20,7 +20,7 @@ endif
 HOST = $(shell uname)
 
 all: $(NAME)_$(BOARD).bin
-BUILD_DIR := build/$(BOARD)
+BUILD_DIR := $(BITBOX_BUILD_DIR)/$(BOARD)
 
 VPATH=.:$(BITBOX)/kernel:$(BITBOX)/kernel/StdPeriph:$(BITBOX)/
 
@@ -34,7 +34,7 @@ FLAGS = -g -Wall -ffast-math -fsingle-precision-constant \
     -fsigned-char -ffunction-sections -fdata-sections -funroll-loops \
     -fomit-frame-pointer -Ofast $(CORTEXM4F)
     #-flto
-CFLAGS = -std=c99 $(FLAGS)
+CFLAGS   = -std=c99 $(FLAGS)
 CXXFLAGS = -std=c++14 $(FLAGS) --no-rtti -fno-exceptions
 LD_FLAGS = -Wl,--gc-sections
 
@@ -46,8 +46,9 @@ DEFINES += BOARD_$(shell echo ${BOARD} | tr '[:lower:]' '[:upper:]')
 CORTEXM4F=-mthumb -mcpu=cortex-m4 -mfloat-abi=hard -mfpu=fpv4-sp-d16\
      -march=armv7e-m -mlittle-endian -nostartfiles
 
-CC=arm-none-eabi-gcc
+CC =arm-none-eabi-gcc
 CXX=arm-none-eabi-g++
+LD =arm-none-eabi-ld
 
 LD_FLAGS += $(CORTEXM4F)
 
@@ -119,6 +120,11 @@ $(BUILD_DIR)/%.o: %.cpp
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 	@echo CC-ARM $<
 
+$(BUILD_DIR)/%.o: %
+	@mkdir -p $(dir $@)
+	@echo EMBED $^
+	@$(LD) -s -r -b binary -o $@ $^
+
 %.bin: %.elf
 	arm-none-eabi-objcopy -O binary $^ $@
 	chmod -x $@
@@ -130,7 +136,11 @@ $(BUILD_DIR)/%.o: %.cpp
 CFILES   := $(filter %.c,$(GAME_C_FILES))
 $(info CFILES $(CFILES))
 CXXFILES := $(filter %.cpp,$(GAME_C_FILES))
-OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) $(CXXFILES:%.cpp=$(BUILD_DIR)/%.o) $(KERNEL:%.c=$(BUILD_DIR)/%.o)
+OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) \
+	$(CXXFILES:%.cpp=$(BUILD_DIR)/%.o)\
+	$(KERNEL:%.c=$(BUILD_DIR)/%.o) \
+	$(GAME_BINARY_FILES:%=$(BUILD_DIR)/%.o)
+
 
 $(NAME)_$(BOARD).elf : $(OBJFILES)
 	$(CC) $(LD_FLAGS) $^ -o $@ $(LIBS)

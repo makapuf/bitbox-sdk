@@ -7,7 +7,7 @@
 # Variables used (export them)
 # --------------
 #   TYPE= sdl | test
-#   BITBOX NAME GAME_C_FILES DEFINES (VGA_MODE, VGA_BPP, ...)
+#   BITBOX NAME GAME_BINARY_FILES GAME_C_FILES DEFINES (VGA_MODE, VGA_BPP, ...)
 #   GAME_C_OPTS DEFINES NO_USB NO_AUDIO USE_SDCARD
 # More arcane defines :
 #   USE_SD_SENSE DISABLE_ESC_EXIT KEYB_FR
@@ -16,7 +16,7 @@ HOST = $(shell uname)
 $(warning compiling $(NAME) with c files $(GAME_C_FILES))
 DEFINES += EMULATOR
 
-BUILD_DIR := build/$(TYPE)
+BUILD_DIR := $(BITBOX_BUILD_DIR)/$(TYPE)
 
 VPATH=.:$(BITBOX)/kernel:$(BITBOX)/
 
@@ -50,7 +50,7 @@ ifeq ($(TYPE), sdl)
   CPPFLAGS += $(shell sdl-config --cflags)
   HOSTLIBS += $(shell sdl-config --libs)
 else ifeq ($(TYPE), test)
-else 
+else
   $(error unknown type $(TYPE) defined, please use sdl or test)
 endif
 
@@ -77,19 +77,27 @@ CXXFLAGS = -std=c++14 $(FLAGS)
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
+	@echo CC $^
 	@$(CC) $(CFLAGS)    $(CPPFLAGS) -c $< -o $@
-	@echo CC $<
 
 $(BUILD_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
+	@echo C++ $^
 	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
-	@echo C++ $<
+
+$(BUILD_DIR)/%.o: %
+	@mkdir -p $(dir $@)
+	@echo EMBED $^
+	@$(LD) -s -r -b binary -o $@ $^
 
 # --- link
 CFILES   := $(filter %.c,$(GAME_C_FILES))
 $(info CFILES $(CFILES))
 CXXFILES := $(filter %.cpp,$(GAME_C_FILES))
-OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) $(CXXFILES:%.cpp=$(BUILD_DIR)/%.o) $(KERNEL:%.c=$(BUILD_DIR)/%.o)
+OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) \
+	$(CXXFILES:%.cpp=$(BUILD_DIR)/%.o) \
+	$(KERNEL:%.c=$(BUILD_DIR)/%.o) \
+	$(GAME_BINARY_FILES:%=$(BUILD_DIR)/%.o)
 
 $(NAME)_$(TYPE): $(OBJFILES)
 	$(CC) $(LD_FLAGS) $^ -o $@ $(HOSTLIBS)
