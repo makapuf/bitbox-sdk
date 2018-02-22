@@ -39,22 +39,22 @@ typedef struct object
 } object;
 
 
-void blitter_insert(object *o); // insert to display list
+void blitter_insert(object *o, int16_t x, int16_t y, int16_t z); // insert to display list
 void blitter_remove(object *o);
 
 void blitter_frame(void); // callback for frames.
 void blitter_line(void);
 
 // creates a new object, activate it, copy from object.
-void rect_insert(struct object *o, int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color);
+void rect_init(struct object *o, uint16_t w, uint16_t h, pixel_t color);
 
-void sprite3_load (struct object *o, const void *sprite_data, int x, int y, int z);
+void sprite3_load (struct object *o, const void *sprite_data);
 static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
 void sprite3_toggle2X(object *o); // toggle between standard and 2X mode
 void sprite3_set_solid(object *o, pixel_t color); // set solid color or 0 to reset
 
-void btc4_insert    (object * o, const uint32_t *btc, int16_t x, int16_t y, int16_t z);
-void btc4_2x_insert (object * o, const uint32_t *btc, int16_t x, int16_t y, int16_t z);
+void btc4_init    (struct object *o, const uint32_t *btc);
+void btc4_2x_init (struct object *o, const uint32_t *btc);
 
 #define TSET_16 0
 #define TSET_32 1
@@ -72,7 +72,7 @@ void btc4_2x_insert (object * o, const uint32_t *btc, int16_t x, int16_t y, int1
 #define TILEMAP_3232u8 TMAP_HEADER(32,32,TSET_16, TMAP_U8)
 #define TILEMAP_6464u832 TMAP_HEADER(32,32,TSET_32,TMAP_U8)
 
-void tilemap_insert (object * o, const void *tileset, int w, int h, uint32_t header, const void *tilemap);
+void tilemap_init (struct object * o, const void *tileset, int w, int h, uint32_t header, const void *tilemap);
 /*
 	- tileset is a list of 16x16 u16 pixels. It will be 1-indexed by tilemap (or 32x32)
     - width and height are displayed sizes, can be bigger/smaller than tilemap, in which case it will loop

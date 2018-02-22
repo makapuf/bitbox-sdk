@@ -39,9 +39,12 @@ static void __attribute__((unused)) blitter_print_state(char *str)
     message("inactive: ");      for ( object *o=blt.inactive_head  ;o; o = o->next) message("%x - ", o -0x10000); message("\n");
 }
 // insert to blitter. not yet active
-void blitter_insert(struct object *o)
+void blitter_insert(struct object *o, int16_t x, int16_t y, int16_t z)
 {
-    LL_PREPEND(blt.inactive_head, o); // prepend since we don't car of order and it's faster
+    o->x=x; o->y=y; o->z=z;
+
+    // prepend since we don't care of order and it's faster
+    LL_PREPEND(blt.inactive_head, o);
 }
 
 // remove only from inactive, it shall not be in active or toactivate when removing.
@@ -187,15 +190,13 @@ void color_blit(object *o)
     #endif
 }
 
-void rect_insert(struct object *o, int16_t x, int16_t y, int16_t w, int16_t h,int16_t z, uint16_t color)
+void rect_init(struct object *o,uint16_t w, uint16_t h, pixel_t  color)
 {
-    o->x=x; o->y=y; o->z=z;
     o->w=w; o->h=h;
 
     o->a = (uint32_t)color;
 
     o->frame=0;
     o->line=color_blit;
-    blitter_insert(o);
 }
 
