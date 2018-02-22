@@ -12,7 +12,7 @@
 #include <errno.h>
 
 // emulated interfaces
-#define draw_buffer __draw_buffer // prevents defining draw buffers to pixel_t 
+#define draw_buffer __draw_buffer // prevents defining draw buffers to pixel_t
 #include "bitbox.h"
 #undef draw_buffer
 
@@ -27,7 +27,7 @@
 #define USER_BUTTON_KEY SDLK_F12
 
 #define KBR_MAX_NBR_PRESSED 6
-#define RESYNC_TIME_MS 2000 // dont try to sync back if delay if more than 
+#define RESYNC_TIME_MS 2000 // dont try to sync back if delay if more than
 
 #define WM_TITLE_LED_ON  "Bitbox emulator (*)"
 #define WM_TITLE_LED_OFF "Bitbox emulator"
@@ -46,12 +46,12 @@
 
 
 // emulated screen size, possibly displayed larger
-int screen_width; 
+int screen_width;
 int screen_height;
 
 #define LINE_BUFFER 1024
 #ifndef LINE_MARGIN
-#define LINE_MARGIN 64 
+#define LINE_MARGIN 64
 #endif
 
 // options
@@ -80,7 +80,7 @@ volatile int vga_odd;
 // IO
 volatile int8_t mouse_x, mouse_y;
 volatile uint8_t mouse_buttons;
- 
+
 int user_button=0;
 
 // joystick handling.
@@ -145,55 +145,45 @@ static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
             graph_line(); // using line, updating draw_buffer ...
             #if VGA_BPP==8
             expand_buffer();
-            #endif 
-            vga_odd=1; 
+            #endif
+            vga_odd=1;
             graph_line(); //  a second time for SKIPLINE modes
             #if VGA_BPP==8
             expand_buffer();
-            #endif 
-        #else 
-            graph_line(); 
+            #endif
+        #else
+            graph_line();
             #if VGA_BPP==8
             expand_buffer();
-            #endif 
+            #endif
         #endif
 
         // copy to screen at this position
         uint16_t *restrict src = (uint16_t*) draw_buffer;
         switch (scale) {
-            case 1 : 
+            case 1 :
                 // copy to screen at this position (cheating)
                 for (int i=0;i<screen_width;i++)
                     *dst++= pixelconv32(*src++);
                 break;
 
-            case 2 : 
+            case 2 :
                 for (int i=0;i<screen_width;i++, dst+=2) {
                     uint32_t pix = pixelconv32(*src++);
                     *dst = pix; // blit line
                     *(dst+1) = pix; // blit line
-                    
+
                     *(dst+scr->pitch/sizeof(uint32_t))=pix; // also next line
                     *(dst+scr->pitch/sizeof(uint32_t)+1)=pix; // also next line
-                    
+
                 }
                 dst += scr->pitch/sizeof(uint32_t); // we already drew the line after, skip it
                 break;
-        } 
+        }
 
         // swap lines buffers to simulate double line buffering
         draw_buffer = ( draw_buffer == &mybuffer1[LINE_MARGIN] ) ? &mybuffer2[LINE_MARGIN] : &mybuffer1[LINE_MARGIN];
 
-    }
-    for (;vga_line<screen_height+VGA_V_SYNC;vga_line++) {
-        #ifdef VGA_SKIPLINE
-            vga_odd=0;
-            graph_vsync(); // using line, updating draw_buffer ...
-            vga_odd=1; 
-            graph_vsync(); //  a second time for SKIPLINE modes
-        #else 
-            graph_vsync(); // once
-        #endif
     }
 }
 #else
@@ -302,13 +292,13 @@ static void joy_init()
     {
         SDL_Joystick *joy = SDL_JoystickOpen(i);
 
-        if (!quiet) 
+        if (!quiet)
             printf("found Joystick %d : %d axis, %d buttons, %d hats (emu=%d)\n",
                 i,
                 SDL_JoystickNumAxes(joy),
                 SDL_JoystickNumButtons(joy),
-                SDL_JoystickNumHats(joy), 
-                SDL_JoystickNumHats(joy)==0 
+                SDL_JoystickNumHats(joy),
+                SDL_JoystickNumHats(joy)==0
                 );
 
         if (i<2) {
@@ -401,7 +391,7 @@ uint8_t key_trans[256] = { // scan_code -> USB BootP code
 // this is a copy of the same function in usbh_hid_keybd
 void kbd_emulate_gamepad (void)
 {
-    // kbd code for each gamepad buttons 
+    // kbd code for each gamepad buttons
     static const uint8_t kbd_gamepad[] = {
         0x07, 0x09, 0x08, 0x15, 0xe0, 0xe4, 0x2c, 0x28, 0x52, 0x51, 0x50, 0x4f
     };
@@ -413,9 +403,9 @@ void kbd_emulate_gamepad (void)
     }
 
     // special : mods
-    if (keyboard_mod[0] & 1) 
+    if (keyboard_mod[0] & 1)
         kbd_gamepad_buttons |= gamepad_L;
-    if (keyboard_mod[0] & 16) 
+    if (keyboard_mod[0] & 16)
         kbd_gamepad_buttons |= gamepad_R;
 
 }
@@ -431,12 +421,12 @@ void emulate_joy_hat(void)
             // set according to axis
             if (gamepad_x[pad]<-THRESHOLD_HAT)
                 sdl_gamepad_buttons[pad] |= gamepad_left;
-            if (gamepad_x[pad]> THRESHOLD_HAT) 
+            if (gamepad_x[pad]> THRESHOLD_HAT)
                 sdl_gamepad_buttons[pad] |= gamepad_right;
 
-            if (gamepad_y[pad]<-THRESHOLD_HAT) 
+            if (gamepad_y[pad]<-THRESHOLD_HAT)
                     sdl_gamepad_buttons[pad] |= gamepad_up;
-            if (gamepad_y[pad]> THRESHOLD_HAT) 
+            if (gamepad_y[pad]> THRESHOLD_HAT)
                     sdl_gamepad_buttons[pad] |= gamepad_down;
 
         }
@@ -448,7 +438,7 @@ static bool handle_events()
 {
     SDL_Event sdl_event;
     uint8_t key;
-    //mouse_x = mouse_y=0; // not moved this frame 
+    //mouse_x = mouse_y=0; // not moved this frame
 
     while (SDL_PollEvent(&sdl_event))
     {
@@ -475,10 +465,10 @@ static bool handle_events()
 
             // now create the keyboard event
             key = key_trans[sdl_event.key.keysym.scancode];
-            // mod key ? 
+            // mod key ?
             switch (key) {
                 case 0xe0: // lctrl
-                    keyboard_mod[0] |= 1; 
+                    keyboard_mod[0] |= 1;
                     break;
                 case 225: // lshift
                     keyboard_mod[0] |= 2;
@@ -488,7 +478,7 @@ static bool handle_events()
                     break;
 
                 case 0xe4: // rctrl
-                    keyboard_mod[0] |= 16; 
+                    keyboard_mod[0] |= 16;
                     break;
                 case 229: // rshift
                     keyboard_mod[0] |= 32;
@@ -497,7 +487,7 @@ static bool handle_events()
                     keyboard_mod[0] |= 64;
                     break;
 
-                default : // set it 
+                default : // set it
                     for (int i=0;i<KBR_MAX_NBR_PRESSED;i++) {
                         if (keyboard_key[0][i]==0) {
                             keyboard_key[0][i]=key;
@@ -515,10 +505,10 @@ static bool handle_events()
                 user_button=0;
 
             key = key_trans[sdl_event.key.keysym.scancode];
-            // mod key ? 
+            // mod key ?
             switch (key) {
                 case 0xe0: // lctrl
-                    keyboard_mod[0] &= ~1; 
+                    keyboard_mod[0] &= ~1;
                     break;
                 case 225: // lshift
                     keyboard_mod[0] &= ~2;
@@ -528,7 +518,7 @@ static bool handle_events()
                     break;
 
                 case 0xe4: // rctrl
-                    keyboard_mod[0] &= ~16; 
+                    keyboard_mod[0] &= ~16;
                     break;
                 case 229: // rshift
                     keyboard_mod[0] &= ~32;
@@ -537,8 +527,8 @@ static bool handle_events()
                     keyboard_mod[0] &= ~64;
                     break;
 
-                default : 
-                    // other one : find it & release it 
+                default :
+                    // other one : find it & release it
                     for (int i=0;i<KBR_MAX_NBR_PRESSED;i++) {
                         if (key==keyboard_key[0][i]) {
                             keyboard_key[0][i]=0;
@@ -641,23 +631,23 @@ FRESULT f_open (FIL* fp, const TCHAR* path, BYTE mode)
     struct stat st;
     if (stat(path, &st) == 0)
         fp->fsize= st.st_size;
-    else 
+    else
         fp->fsize=-1;
 
     fp->fs = (FATFS*) fopen ((const char*)path,mode_host); // now ignores mode.
     if (fp->fs) return FR_OK;
 
     switch(errno) {
-        case ENOENT: 
+        case ENOENT:
             return FR_NO_FILE;
         case EACCES:
             return FR_WRITE_PROTECTED;
-        case EEXIST: 
+        case EEXIST:
             return FR_EXIST;
-        default: 
+        default:
             return FR_INT_ERR;
     }
-    
+
 }
 
 FRESULT f_close (FIL* fp)
@@ -714,7 +704,7 @@ FRESULT f_readdir ( DIR* dp, FILINFO* fno )
     errno=0;
     char buffer[512]; // assumes max path size for FAT32
 
-    struct dirent *de = readdir((NIX_DIR *)dp->fs); 
+    struct dirent *de = readdir((NIX_DIR *)dp->fs);
 
     if (de) {
         if (strlen(de->d_name)<=12) {
@@ -729,12 +719,12 @@ FRESULT f_readdir ( DIR* dp, FILINFO* fno )
                 fno->fname[i]=de->d_name[i];
             fno->fname[6]='~';
             fno->fname[7]='0'; // FIXME : multiple files
-            fno->fname[8]='.'; 
+            fno->fname[8]='.';
 
-            // copy extension 
+            // copy extension
             for (int i=0;i<4;i++)
                 fno->fname[9+i]=de->d_name[strlen(de->d_name)-3+i];
-            fno->fname[14]='\0'; 
+            fno->fname[14]='\0';
 
             // make long name
             if(_USE_LFN) {
@@ -790,7 +780,7 @@ FRESULT f_rename (const char *file_from, const char *file_to)
     }
 }
 
-// -- misc bitbox functions 
+// -- misc bitbox functions
 
 // user button
 int button_state() {
@@ -860,7 +850,7 @@ static void init_all(void)
 
     set_led(0); // off by default
     set_mode(VGA_H_PIXELS,VGA_V_PIXELS); // create a default new window
-    SDL_ShowCursor(SDL_DISABLE);    
+    SDL_ShowCursor(SDL_DISABLE);
 
     #ifndef NO_AUDIO
     audio_init();
@@ -893,10 +883,8 @@ int emu_loop (void *_)
         gamepad_buttons[0] = kbd_gamepad_buttons|sdl_gamepad_buttons[0];
         gamepad_buttons[1] = sdl_gamepad_buttons[1];
 
-
-
         // 60 Hz loop delay
-        now = SDL_GetTicks();        
+        now = SDL_GetTicks();
         if (next_time > now)
             SDL_Delay(next_time - now);
 
@@ -906,7 +894,7 @@ int emu_loop (void *_)
         } else {
             next_time += slow ? TICK_INTERVAL*10:TICK_INTERVAL;
         }
-        
+
         #if VGA_MODE!=NONE
         refresh_screen(screen);
         #endif
@@ -914,9 +902,18 @@ int emu_loop (void *_)
         vga_frame++;
 
         // if locked, unlock it
-        if (!SDL_SemValue(frame_sem)) {
-            SDL_SemPost(frame_sem);
-        }
+        SDL_SemPost(frame_sem);
+
+        for (;vga_line<screen_height+VGA_V_SYNC;vga_line++) {
+        #ifdef VGA_SKIPLINE
+            vga_odd=0;
+            graph_vsync(); // using line, updating draw_buffer ...
+            vga_odd=1;
+            graph_vsync(); //  a second time for SKIPLINE modes
+        #else
+            graph_vsync(); // once
+        #endif
+       }
     }
     exit(0);
     return 0;
@@ -928,7 +925,7 @@ int main ( int argc, char** argv )
     init_all();
 
     frame_sem=SDL_CreateSemaphore(0);
-    SDL_Thread * thread=SDL_CreateThread(emu_loop,0);  
+    SDL_Thread * thread=SDL_CreateThread(emu_loop,0);
 
     bitbox_main();
 
