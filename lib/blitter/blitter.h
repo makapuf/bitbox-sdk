@@ -1,13 +1,11 @@
 #pragma once
 /*
-todo : add to_delete as a magic number
-introduce utlist +3 lists heads : wait_list, draw_list, past_list
-use utlist sort ?
 subobjects ?
-py3 / clean utils
-iface c++
+clean utils
 sprite_set2x(tf), btc_set2x()
-lock
+lock ?
+new tilemaps (multi)
+C++
 */
 
 #include <stdint.h>
@@ -26,10 +24,8 @@ typedef struct object
 	void *data; // this will be the source data
 	void (*frame)(struct object *o, int line);
 	void (*line) (struct object *o);
-	int16_t z;
 
-	// live data (typically in RAM, stable per frame)
-	int16_t x,y; // ry is real Y, while y is wanted y, which will be activated next frame.
+	int16_t x,y,z;
 	uint16_t w,h,fr; // object size, frame is frame id
 
 	uintptr_t a,b,c,d; // various 32b used for each blitter as extra parameters or internally
@@ -42,12 +38,19 @@ typedef struct object
 void blitter_insert(object *o, int16_t x, int16_t y, int16_t z); // insert to display list
 void blitter_remove(object *o);
 
-void blitter_frame(void); // callback for frames.
-void blitter_line(void);
-
 // creates a new object, activate it, copy from object.
 void rect_init(struct object *o, uint16_t w, uint16_t h, pixel_t color);
 
+
+struct SpriteFileHeader {
+    uint16_t magic;
+    uint16_t width;
+    uint16_t height;
+    uint8_t frames;
+    uint8_t datacode;
+    uint16_t x1,y1,x2,y2; // hitbox
+    uint16_t data[]; // frame_start indices, then len+couple_palette[len] if couples, then data
+};
 void sprite3_load (struct object *o, const void *sprite_data);
 static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
 void sprite3_toggle2X(object *o); // toggle between standard and 2X mode
@@ -104,3 +107,19 @@ void tmap_blit(object *dst, int x, int y, uint32_t src_header, const void *src_d
 
 /* Blit a given layer of a tilemap to an object */
 void tmap_blitlayer(object *tm, int x, int y, uint32_t src_header, const void* data, int layer);
+
+struct TilemapFileObjects {
+	int16_t x,y;
+	uint8_t oid;
+	uint8_t v[3];
+};
+
+struct TilemapFile {
+    uint16_t magic; // 0xb17b
+    uint16_t map_w,map_h;
+    uint8_t nb_layers; // always blit last layer on screen
+    uint8_t __rfu;
+
+    uint16_t data[]; // nb_layers*map_w*map_h of 2b tileset + 14b tileindex
+    // at the end : tmapfileobjects
+};

@@ -40,16 +40,6 @@ typedef uint16_t couple_t;
 typedef uint32_t couple_t;
 #endif
 
-struct SpriteHeader {
-    uint16_t magic;
-    uint16_t width;
-    uint16_t height;
-    uint8_t frames;
-    uint8_t datacode;
-    uint16_t x1,y1,x2,y2; // hitbox
-    uint16_t data[]; // frame_start indices, then len+couple_palette[len] if couples, then data
-};
-
 // fixme wait for sync ?
 void sprite3_load(struct object *o, const void *data, int x, int y, int z)
 {
