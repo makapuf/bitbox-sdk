@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 """
-TSET file format : 
+TSET file format :
     u8 tilesize (8,16)
     u8 datacode : 0 = u16, 1=u8, 2=couples references in palette
     u16 nb of tiles
     (optional) : couples palette as u16
-    u8 or u16 data[]    
+    u8 or u16 data[]
 """
 
 # fixme export tile names (type)

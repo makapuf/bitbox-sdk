@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include "kconf.h" // kernel conf can be the basis of values
 
-#define BITBOX_KERNEL 0010 
+#define BITBOX_KERNEL 0010
 
 // --- Main -----------------------------------------------------------------------------
 void game_init(void); // user provided
@@ -30,14 +30,14 @@ void game_snd_buffer(uint16_t *buffer, int len);
     #define VGA_BPP 16 // make it default
 	#define RGB(r,g,b)  ((((r)>>3)&0x1f)<<10 | (((g)>>3)&0x1f)<<5 | (((b)>>3)&0x1f))
 	typedef uint16_t pixel_t;
-#endif 
+#endif
 
 extern uint32_t vga_line; // should be const
 extern volatile uint32_t vga_frame;
 
 // in a physical line (on screen) but not a buffer refresh line (only used in half-height modes)
 #ifdef VGA_SKIPLINE
-extern volatile int vga_odd; 
+extern volatile int vga_odd;
 #else
 #define vga_odd 0 // never
 #endif
@@ -45,7 +45,7 @@ extern volatile int vga_odd;
 extern void graph_line(void); // user provided graphical callback
 extern void graph_vsync(void); // user provided, called during vsync lines
 
-// 0x0rrrrrgggggbbbbb pixels or 0xrrrggbbl 
+// 0x0rrrrrgggggbbbbb pixels or 0xrrrggbbl
 extern pixel_t *draw_buffer;  // drawing next line, 8 or 16bpp
 
 extern void wait_vsync(); // wait for next vsync start

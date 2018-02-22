@@ -29,12 +29,12 @@ if __name__=='__main__' :
 
     srcs = [Image.open(filein).convert('RGB') for filein in args.file_in] # removing alpha here
     src  = stack_image(srcs)
-    
+
     # set to 256c image
     src_pal=src.quantize(colors=args.colors,method=2)
     if DEBUG: src_pal.save('_debug.png') # after quantization
-    
-    # save small palette image 
+
+    # save small palette image
     src_pal=src_pal.crop((0,0,16,(args.colors+15)/16))
     src_pal.putdata(range(args.colors))
     src_pal.save(args.file_out)
@@ -44,7 +44,7 @@ if __name__=='__main__' :
     print "#include <stdint.h>"
     print "const uint16_t vga_palette[%d]= {"%args.colors,
 
-    for i in range(args.colors) : 
+    for i in range(args.colors) :
         if i%16==0 : sys.stdout.write('\n    ')
         c = px[i%16,i/16]
         sys.stdout.write('0x%04x,'%((c[0]>>3)<<10 | (c[1]>>3)<<5 | c[2]>>3))

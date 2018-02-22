@@ -4,9 +4,9 @@ ASCII encoding, start with space (0x20)
 - image must have one line
 - first pixel found is bg, all others are fg
 - first line is for widths : separate non-bg with multiple fg pixels fonts one fg pixel separate each letter
- example (space, D character) : 
+ example (space, D character) :
 
---x----x 
+--x----x
 --------
 ---xxx--
 ---x--x-
