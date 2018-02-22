@@ -61,8 +61,8 @@ void graph_vsync()
     switch (vga_line) {
         case VGA_V_BLANK-3 :
             // append active, inactive lists to to_activate
-            LL_CONCAT(blt.toactivate_head, blt.active_head);
-            LL_CONCAT(blt.toactivate_head, blt.inactive_head);
+            if (blt.active_head) LL_CONCAT(blt.toactivate_head, blt.active_head);
+            if (blt.inactive_head) LL_CONCAT(blt.toactivate_head, blt.inactive_head);
             // empty them
             blt.active_head=0;
             blt.inactive_head=0;
@@ -192,7 +192,7 @@ void rect_insert(struct object *o, int16_t x, int16_t y, int16_t w, int16_t h,in
     o->x=x; o->y=y; o->z=z;
     o->w=w; o->h=h;
 
-    o->a = (int)color;
+    o->a = (uint32_t)color;
 
     o->frame=0;
     o->line=color_blit;
