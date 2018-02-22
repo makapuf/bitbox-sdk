@@ -32,15 +32,14 @@ def quantize_alpha(im,palette) :
     palette.load()
 
     alpha = im.split()[-1]
-    mask  = Image.eval(alpha, lambda a: 255 if a <=ALPHA_T else 0)
+    mask  = Image.eval(alpha, lambda a: 256 if a <= ALPHA_T else 0)
 
-    #im2   = im.convert('RGB').quantize('P',dither=0,palette=palette.palette)
     # force quantization with a given palette, but without dithering !
     assert palette.mode=='P'
     im = im._new(im.im.convert("P", 0, palette.im))
 
-    im.paste(255, mask) # Paste the color of index 255 and use alpha as a mask
-    im.info['transparency']=255
+    im.paste(TRANSP8, mask) # Paste the color of index 255 and use alpha as a mask
+    im.info['transparency']=TRANSP8
     return im
 
 def rgba2u16(r,g,b,a) :
@@ -51,6 +50,14 @@ def u162rgba(x) :
     'A1R5G5B5 to r8,g8,b8,a8'
     return (((x>>10)&0x1f)<<3,((x>>5)&0x1f)<<3,(x&0x1f)<<3,255) if (x>>15) else (0,0,0,0)
 
+def rgba2u8(r,g,b,a) :
+    'R8G8B8A8 to R3G2B2L1'
+    r = (r*7+127)//255
+    g = (g*7+127)//255
+    b = (b*7+127)//255
+    return r<<5 | (g&~1)<<2 | (b&~1) | (g&1) if a>128 else TRANSP8
+
+
 def gen_micro_pal() :
     # generates a micro palette Image
     pal = []
@@ -60,9 +67,9 @@ def gen_micro_pal() :
         b = c & 7
         pal += [r<<5|r<<2|r>>1, g<<5|g<<2|g>>1, b<<5|b<<2|b>>1]
     img = Image.new('P',(16,16))
+    img.putdata(list(range(256)))
     img.putpalette(pal)
     if DEBUG and False :
-        img.putdata(list(range(256)))
         img.save('_micro.png')
     return img
 
