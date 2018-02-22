@@ -872,13 +872,10 @@ static void init_all(void)
 
 SDL_sem *frame_sem;
 
-void wait_vsync(const unsigned int n)
+void wait_vsync()
 {
-    uint32_t nframe = vga_frame+n;
-    while (vga_frame < nframe) {
-        // wait other thread to wake me up
-        SDL_SemWait(frame_sem);
-    }
+    // wait other thread to wake me up
+    SDL_SemWait(frame_sem);
 }
 
 /* this loop handles asynchronous emulation : screen refresh, user inputs.. */

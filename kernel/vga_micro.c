@@ -308,3 +308,10 @@ void __attribute__ ((used)) DMA2_Stream5_IRQHandler(void)
     // this will trigger a new interrupt. need to get rid of it !
     NVIC_ClearPendingIRQ (DMA2_Stream5_IRQn);    // clear pending DMA IRQ from the NVIC
 }
+
+
+void wait_vsync()
+{
+    unsigned int old_frame=vga_frame;
+    while (vga_frame == old_frame) {}
+}

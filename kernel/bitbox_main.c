@@ -16,11 +16,3 @@ __attribute__((weak)) void bitbox_main(void)
 	}
 }
 
-
-// redefined in emu 
-__attribute__((weak)) void wait_vsync(const unsigned int n)
-{
-    uint32_t nframe = vga_frame+n;
-    while (vga_frame < nframe) {
-    }
-}
