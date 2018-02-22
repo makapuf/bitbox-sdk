@@ -138,8 +138,8 @@ void skip_line(struct object *o) {}
 
 void sprite3_line_noclip (struct object *o)
 {
-    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
-    const uint16_t line = o->fr*h->height+vga_line-o->y;
+    struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
+    const uint16_t line = (int)o->fr*h->height+vga_line-o->y;
     uint8_t * restrict src = (uint8_t*) o->data + h->data[line];
 
     pixel_t * restrict dst = &draw_buffer[o->x];
@@ -161,7 +161,7 @@ void sprite3_line_noclip (struct object *o)
                 src+=nb*sizeof(pixel_t);
                 break;
             case BLIT_BACK : // back reference as u16
-                backref = src[0] << 8 | src[1];
+                backref = *(uint16_t*)(src);
                 memcpy(dst,src-backref,nb*sizeof(pixel_t));
                 src += 2; // always u16
                 dst += nb;
@@ -178,9 +178,9 @@ void sprite3_line_noclip (struct object *o)
 // fixme join with noclip through inline, allow partial skips like next one
 void sprite3_line_clip (struct object *o)
 {
-    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
     const uint16_t line = o->fr*h->height+vga_line-o->y;
-    uint8_t * restrict src = (uint8_t*) o->data + h->data[line]; // fixme calc only at frame !
+    uint8_t * restrict src = (uint8_t*) o->data + h->data[line];
 
     uint8_t * restrict dst = (uint8_t *)&draw_buffer[o->x];
     while(dst < (uint8_t *)&draw_buffer[o->x+o->w]) {
@@ -197,16 +197,13 @@ void sprite3_line_clip (struct object *o)
                 dst+=nb;
                 src+=nb;
                 break;
-            case BLIT_BACK : // back reference as nb u16 :4, backref:10
+            case BLIT_BACK : // back reference as u16
                 if (dst>(uint8_t*)&draw_buffer[-MARGIN]) {
-                    const int delta = ((header&3)<<8 | *src)-2;
-                    const int nnb = (nb>>3)*2;
-                    memcpy(dst,src - delta, nnb);
-                    dst += (nb>>3)*2;
-                    src += 1;
+                    const int backref = *(uint16_t*)(src);
+                    memcpy(dst,src - backref, nb);
                 }
-                dst += (nb>>3)*2;
-                src += 1;
+                dst += nb;
+                src += 2;
                 break;
             case BLIT_FILL : // fill w / u16
                 if (dst>(uint8_t*)&draw_buffer[-MARGIN]) {
@@ -226,9 +223,9 @@ void sprite3_line_clip (struct object *o)
 static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, bool clip, bool solid)
 {
     // Skip to line
-    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
     const uint16_t line = o->fr*h->height+vga_line-o->y;
-    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line]; // fixme calc only at frame
+    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line];
 
     pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
     couple_t * restrict couple_palette = (couple_t *)o->b;
@@ -330,7 +327,7 @@ static inline void blit2Xsingle(pixel_t *dst, couple_t color)
 void sprite3_cpl_line_noclip_2X (object *o) {
 
     // Skip to line
-    struct SpriteHeader *h = (struct SpriteHeader*)o->a;
+    struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
     const uint16_t line = o->fr*h->height+(vga_line-o->y)/2;
     uint8_t *  restrict src=(uint8_t*) o->data + h->data[line];
 
