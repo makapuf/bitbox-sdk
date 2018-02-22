@@ -40,10 +40,9 @@ typedef uint16_t couple_t;
 typedef uint32_t couple_t;
 #endif
 
-// fixme wait for sync ?
-void sprite3_load(struct object *o, const void *data, int x, int y, int z)
+void sprite3_load(struct object *o, const void *data)
 {
-    const struct SpriteHeader *h=data;
+    const struct SpriteFileHeader *h=data;
 
     if (h->magic!=0xB17B) {
     	message("Error : wrong header found");
@@ -68,13 +67,8 @@ void sprite3_load(struct object *o, const void *data, int x, int y, int z)
     o->line = skip_line; // skip now until frame decides which one to use
 
     // default values
-    o->x=x;
-    o->y=y;
-    o->z=z;
     o->fr=0;
     o->d=0; // reset MODE
-
-    blitter_insert(o);
 }
 
 void sprite3_set_solid(object *o, pixel_t color)

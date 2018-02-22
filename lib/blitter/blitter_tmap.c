@@ -258,7 +258,7 @@ void tilemap_u8_line8_8(object *o) {
 
 
 
-void tilemap_insert(object *o, const void *tileset, int w, int h, uint32_t header, const void *tilemap)
+void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header, const void *tilemap)
 {
 
     o->data = (uint32_t*)tilemap;
