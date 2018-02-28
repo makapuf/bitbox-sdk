@@ -311,8 +311,6 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
             break;
     }
     #endif
-    blitter_insert(o);
-
 }
 
 // blit a tmap inside another one.
