@@ -86,11 +86,12 @@ dfu-micro: micro
 	$(SUBMAKE_ARM) BOARD='micro' dfu
 
 # --- Data embedding : header generation
-$(BITBOX_DATA_HEADER): $(SPRITES:%=data/sprite_%) $(IMAGES:%=data/%.spr) data/game.map
+$(BITBOX_DATA_HEADER): $(GAME_BINARY_FILES)
 	@echo "GEN" $(BITBOX_DATA_HEADER)
 	@for fic in $(GAME_BINARY_FILES) ; do \
-		echo "extern char _binary_$${fic}_start;" | tr -c '[a-zA-Z ;\n]' '_' >> $@ ;\
-		echo "extern char _binary_$${fic}_end;"   | tr -c '[a-zA-Z ;\n]' '_' >> $@ ;\
+		ficn=$$(echo -n $${fic} | tr -c "[:alnum:]" '_'); \
+		echo "extern const char _binary_$${ficn}_start;" >> $@ ;\
+		echo "extern const char _binary_$${ficn}_end;"   >> $@ ;\
 	done
 
 
