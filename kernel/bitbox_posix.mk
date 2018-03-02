@@ -85,19 +85,13 @@ $(BUILD_DIR)/%.o: %.cpp
 	@echo C++ $^
 	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/%.o: %
-	@mkdir -p $(dir $@)
-	@echo EMBED $^
-	@$(LD) -s -r -b binary -o $@ $^
-
 # --- link
 CFILES   := $(filter %.c,$(GAME_C_FILES))
 $(info CFILES $(CFILES))
 CXXFILES := $(filter %.cpp,$(GAME_C_FILES))
 OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) \
 	$(CXXFILES:%.cpp=$(BUILD_DIR)/%.o) \
-	$(KERNEL:%.c=$(BUILD_DIR)/%.o) \
-	$(GAME_BINARY_FILES:%=$(BUILD_DIR)/%.o)
+	$(KERNEL:%.c=$(BUILD_DIR)/%.o)
 
 $(NAME)_$(TYPE): $(OBJFILES)
 	$(CC) $(LD_FLAGS) $^ -o $@ $(HOSTLIBS)

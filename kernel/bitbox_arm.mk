@@ -120,11 +120,6 @@ $(BUILD_DIR)/%.o: %.cpp
 	@$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
 	@echo CC-ARM $<
 
-$(BUILD_DIR)/%.o: %
-	@mkdir -p $(dir $@)
-	@echo EMBED $^
-	@$(LD) -s -r -b binary -o $@ $^
-
 %.bin: %.elf
 	arm-none-eabi-objcopy -O binary $^ $@
 	chmod -x $@
@@ -138,9 +133,7 @@ $(info CFILES $(CFILES))
 CXXFILES := $(filter %.cpp,$(GAME_C_FILES))
 OBJFILES := $(CFILES:%.c=$(BUILD_DIR)/%.o) \
 	$(CXXFILES:%.cpp=$(BUILD_DIR)/%.o)\
-	$(KERNEL:%.c=$(BUILD_DIR)/%.o) \
-	$(GAME_BINARY_FILES:%=$(BUILD_DIR)/%.o)
-
+	$(KERNEL:%.c=$(BUILD_DIR)/%.o)
 
 $(NAME)_$(BOARD).elf : $(OBJFILES)
 	$(CC) $(LD_FLAGS) $^ -o $@ $(LIBS)
