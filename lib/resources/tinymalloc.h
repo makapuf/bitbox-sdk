@@ -36,7 +36,7 @@ int t_available();                           // get available mem (but not nec. 
 
 #ifdef TINYMALLOC_IMPLEMENTATION
 
-#define debug(...) 
+#define debug(...)
 
 typedef union header_u {                        // block header
 	struct {

@@ -11,7 +11,7 @@ const char * parse_chunk(const char *buf)
 
 	#ifdef TEST
 	printf("chunk: %.4s size:%d\n",info,sz);
-	#endif 
+	#endif
 
 	const char *tgtbuf = buf+sz;
 
@@ -20,13 +20,13 @@ const char * parse_chunk(const char *buf)
 		buf+=4;
 		#ifdef TEST
 		printf("list : %.4s\n",listname);
-		#endif 
+		#endif
 
 		while (buf<tgtbuf) {
 			buf = parse_chunk(buf);
 		}
 	} else {
-		// use chunk ! 
+		// use chunk !
 		buf += sz;
 	}
 
@@ -43,12 +43,12 @@ const char * parse_chunk(const char *buf)
 int main()
 {
     printf("parsing file\n");
-    void *buf=malloc(SZ); 
-    FILE *f=fopen("go_ahead.wav","r"); 
+    void *buf=malloc(SZ);
+    FILE *f=fopen("go_ahead.wav","r");
     const size_t n=fread(buf,1,SZ,f);
     printf("%d bytes read.\n",n);
 
     parse_chunk(buf);
 }
 
-#endif 
+#endif
