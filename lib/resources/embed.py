@@ -1,8 +1,20 @@
 #! /usr/bin/env python3
 '''
-Embeds binaries to C code.
+Embeds binaries to C code (not C++)
 Outputs to stdout as a header file.
 Define DATA_IMPLEMENTATION to include it as an include file.
+
+Alternatives :
+    - use objcopy but this needs to specify the binary
+      of the output ( which we might not know on sdl )
+    - use ld and -o binary. this works but this will put
+      all data in .data section which put it in ram, without
+      being able to change it.
+    - use incbin on inline assembly. this will work too but
+      it's slightly more complex and relies on inline assembly
+      so a bit less portable.
+    - use xxd utility : this only works on linux and we lack the
+      ability to export the header or control prefix / extensions.
 '''
 
 import sys
@@ -44,11 +56,10 @@ for file in args.files :
     if ':' in file :
         file,quoted = file.split(':',1)
     else :
-        for ext in args.remove :
-            file = file[:file.find(ext)]
+        base,ext = file.rsplit('.',1)
 
         # only keep basename, quote special chars
-        quoted = re.sub(r'(^[^a-zA-Z])|[^0-9a-zA-Z_]','_',os.path.basename(file))
+        quoted = re.sub(r'(^[^a-zA-Z])|[^0-9a-zA-Z_]','_',os.path.basename(base if ext in args.remove else file))
 
     # get file size
     size = os.path.getsize(file)
@@ -57,15 +68,18 @@ for file in args.files :
 print ("#ifndef %sDECLARATION"%PREFIX)
 print ("#define %sDECLARATION"%PREFIX)
 print ()
+
+sumsize = sum(n for (_,_,n) in all_files )
+print ("// Total size: %dk."%(sumsize//1024))
 for f,q,n in all_files :
-    print ("extern const char %s%s[%d];\t// from %s"%(args.prefix, q,n,f))
+    print ("extern const char %s%s[%d];\t// from %s - %d%%"%(args.prefix, q,n,f,n*100//sumsize))
 
 print ()
 print ("\n#endif // %sDECLARATION"%PREFIX)
 print ("\n#ifdef %sIMPLEMENTATION"%PREFIX + "  // "+"-"*80+"\n")
 
 for f,q,n in all_files :
-    print ("const char %s%s[%d] = " % (args.prefix,q,n))
+    print ("const char %s%s[%d] =" % (args.prefix,q,n))
     print ("\n".join(" \"%s\""%line for line in gen_lines(open(f,'rb').read()))+";\n")
 
 print ("\n#endif // %sIMPLEMENTATION"%PREFIX)
