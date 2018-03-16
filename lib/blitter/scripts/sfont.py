@@ -1,48 +1,47 @@
 """make proportional fonts from a bitmap.
+
 ASCII encoding, start with space (0x20)
 
-- image must have one line
-- first pixel found is bg, all others are fg
-- first line is for widths : separate non-bg with multiple fg pixels fonts one fg pixel separate each letter
- example (space, D character) :
+take a font pixmap (1bpp), with name fontname_8x12.png
 
---x----x
---------
----xxx--
----x--x-
----x--x-
----xxx--
---------
+output the font as a .bin as used in blt_surface :
+- u8 w,h pixel width of a character
+- 256 widths in pixels (as 4 bits : 128bytes)
+- N characters in pixels made of (w+7)/8*h bytes (ie each line has a whole number of bytes)
 
-outputs the font as a bitmap or a C file.
 """
 
 import sys
 from PIL import Image
-import itertools 
+import itertools
 
-sys.argv.append('font.png')
+sys.argv.append('../../textmode/fonts/font8x12.png')
+size_y = 12
+size_x = 8
 
 img =Image.open(sys.argv[1]).convert('P')
-data=img.load()
 
-bg = data[0,0]
-# gets font height
-
-grouped = itertools.groupby((data[x,0] for x in range(img.size[0])), key=lambda x:x==bg) 
 letters = []
-pos = 0
-for i,(b,c) in enumerate(grouped) : 
-	n = sum(1 for _ in c)
-	if b : 
-		#print i/2,pos,n
-		pixels = []
-		for y in range(1,img.size[1]) :
-			row=tuple( 0 if data[pos+x,y]==bg else 1 for x in range(n) )
-			pixels.append(row)
-		letters.append(pixels)
-	pos +=n
+for y in range(img.size[1]//size_y) :
+    for x in range(img.size[0]//size_x) :
+        block = tuple(img.crop((x*size_x,y*size_y,(x+1)*size_x,(y+1)*size_y)).getdata())
+        # put it in lines
+        bitlines = [block[l*size_x:l*size_x+size_x] for l in range(size_y)]
+        # get left-right zero
+        for right in range(size_x-1,0,-1) :
+            if any(bitlines[y][right]==1 for y in range(size_y)) :
+                break
+        left=0
+        for left in range(0,right) :
+            if any(bitlines[y][left]==1 for y in range(size_y)) :
+                break
+        letters.append((bitlines,left,right-left+1))
+        for l in bitlines : print (''.join('.#'[b] for b in l))
+        print (left,right-left+1)
 
-for row in letters[ord('[')-32] : 
-	print ''.join('.#'[x] for x in row)
+        bytes = ["0x%02x"%int("".join("01"[i] for i in block[l*size_x:(l+1)*size_x]),2) for l in range(size_y)]
+
+#        print ("{",", ".join(bytes),"}, //",y*16+x,repr(chr(y*16+x)))
+
+# now output data as bytes (on stdout)
 

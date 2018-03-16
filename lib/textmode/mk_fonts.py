@@ -1,4 +1,4 @@
-''' an utility to transform pixmaps of 8x16 and 6x8 fonts to C arrays of uint8_t '''
+''' an utility to transform pixmaps of fonts to C arrays of uint8_t '''
 
 from PIL import Image
 import sys
@@ -19,6 +19,7 @@ def font(size_x, size_y) :
 print "// file generated from script",sys.argv[0]
 print "#include <stdint.h>"
 font(8,16)
+font(8,12)
 font(6,8)
 font(8,8)
 font(4,6)
