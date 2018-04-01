@@ -131,6 +131,22 @@ static inline uint32_t pixelconv32(uint16_t pixel)
     return ((pixel & (0x1f<<10))<<9 | (pixel & (0x1f<<5))<<6 | (pixel & 0x1f)<<3);
 }
 
+
+// emulate vsync
+static void __attribute__ ((optimize("-O3"))) vsync_screen ()
+{
+    for (;vga_line<screen_height+VGA_V_SYNC;vga_line++) {
+    #ifdef VGA_SKIPLINE
+        vga_odd=0;
+        graph_vsync(); // using line, updating draw_buffer ...
+        vga_odd=1;
+        graph_vsync(); //  a second time for SKIPLINE modes
+    #else
+        graph_vsync(); // once
+    #endif
+    }
+}
+
 static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
 // uses global line + vga_odd, scale two times
 {
@@ -868,52 +884,51 @@ void wait_vsync()
     SDL_SemWait(frame_sem);
 }
 
+// wait for the next 60Hz frame.
+// during this the other thread will typically update
+static inline void frame_wait( void )
+{
+    static int next_time = 0;
+
+    // 60 Hz loop delay
+    int now = SDL_GetTicks();
+    if (next_time > now)
+        SDL_Delay(next_time - now);
+
+    if (((int)now-(int)next_time) > RESYNC_TIME_MS)  { // if too much delay, resync
+        printf("- lost sync : %d, resyncing\n",now-next_time);
+        next_time = now;
+    } else {
+        next_time += slow ? TICK_INTERVAL*10:TICK_INTERVAL;
+    }
+}
+
 /* this loop handles asynchronous emulation : screen refresh, user inputs.. */
 int emu_loop (void *_)
 {
-    uint32_t now, next_time;
-    next_time = SDL_GetTicks();
-    bool done=false;
+    while (1) {
+        #if VGA_MODE!=NONE
+        refresh_screen(screen);
+        #endif
 
-    while (!done) {
         // message processing loop
-        done = handle_events();
+        bool done = handle_events();
+        if (done) break;
+
         kbd_emulate_gamepad();
         emulate_joy_hat();
         gamepad_buttons[0] = kbd_gamepad_buttons|sdl_gamepad_buttons[0];
         gamepad_buttons[1] = sdl_gamepad_buttons[1];
 
-        // 60 Hz loop delay
-        now = SDL_GetTicks();
-        if (next_time > now)
-            SDL_Delay(next_time - now);
-
-        if (((int)now-(int)next_time) > RESYNC_TIME_MS)  { // if too much delay, resync
-            printf("- lost sync : %d, resyncing\n",now-next_time);
-            next_time = now;
-        } else {
-            next_time += slow ? TICK_INTERVAL*10:TICK_INTERVAL;
-        }
-
-        #if VGA_MODE!=NONE
-        refresh_screen(screen);
-        #endif
-        SDL_Flip(screen);
         vga_frame++;
 
-        // if locked, unlock it
+        /* we release the semaphore and wait for the other thread. */
         SDL_SemPost(frame_sem);
+        frame_wait();
 
-        for (;vga_line<screen_height+VGA_V_SYNC;vga_line++) {
-        #ifdef VGA_SKIPLINE
-            vga_odd=0;
-            graph_vsync(); // using line, updating draw_buffer ...
-            vga_odd=1;
-            graph_vsync(); //  a second time for SKIPLINE modes
-        #else
-            graph_vsync(); // once
-        #endif
-       }
+        vsync_screen(); // runs vsync now, let's hope other thread has finished ...
+        SDL_Flip(screen);
+
     }
     exit(0);
     return 0;
