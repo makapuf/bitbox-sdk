@@ -34,9 +34,9 @@ static inline int cmp_z(object *o1, object *o2) { return o1->z > o2->z ? -1 : (o
 static void __attribute__((unused)) blitter_print_state(char *str)
 {
     message(" --- %s : frame %d line %d \n",str,vga_frame, vga_line);
-    message("to activate: ");   for ( object *o=blt.toactivate_head;o; o = o->next) message("%x - ", o -0x10000); message("\n");
-    message("active: ");        for ( object *o=blt.active_head    ;o; o = o->next) message("%x - ", o -0x10000); message("\n");
-    message("inactive: ");      for ( object *o=blt.inactive_head  ;o; o = o->next) message("%x - ", o -0x10000); message("\n");
+    message("to activate: ");   for ( object *o=blt.toactivate_head;o; o = o->next) message("%x - ", o); message("\n");
+    message("active: ");        for ( object *o=blt.active_head    ;o; o = o->next) message("%x - ", o); message("\n");
+    message("inactive: ");      for ( object *o=blt.inactive_head  ;o; o = o->next) message("%x - ", o); message("\n");
 }
 // insert to blitter. not yet active
 void blitter_insert(struct object *o, int16_t x, int16_t y, int16_t z)
@@ -47,11 +47,20 @@ void blitter_insert(struct object *o, int16_t x, int16_t y, int16_t z)
     LL_PREPEND(blt.inactive_head, o);
 }
 
-// remove only from inactive, it shall not be in active or toactivate when removing.
 void blitter_remove(object *o)
 {
-    if (blt.inactive_head)   LL_DELETE(blt.inactive_head, o);
-    if (blt.toactivate_head) LL_DELETE(blt.toactivate_head, o);
+    // object should not be in its active zone
+    if ((int)vga_line<o->y) { // not yet reached
+        LL_DELETE(blt.toactivate_head, o);
+    } else if ((int)vga_line>o->y+o->h) {
+        LL_DELETE(blt.inactive_head, o);
+    } else if ((int)vga_line>=VGA_V_PIXELS) { // OK object was not removed but we're past screen display
+        LL_DELETE(blt.active_head, o);
+    } else {
+        // we're in active zone, danger !
+        die(4,3);
+        message ("ERROR : cannot remove active object from blitter yet !\n");
+    }
 }
 
 void graph_vsync()
@@ -64,14 +73,17 @@ void graph_vsync()
     switch (vga_line) {
         case VGA_V_BLANK-3 :
             // append active, inactive lists to to_activate
-            if (blt.active_head) LL_CONCAT(blt.toactivate_head, blt.active_head);
+            if (blt.active_head)   LL_CONCAT(blt.toactivate_head, blt.active_head);
             if (blt.inactive_head) LL_CONCAT(blt.toactivate_head, blt.inactive_head);
+
             // empty them
-            blt.active_head=0;
-            blt.inactive_head=0;
-            // sort to activate along Y (should be almost sorted)
+            blt.active_head   = 0;
+            blt.inactive_head = 0;
+
+            // sort to_activate along Y (should be almost sorted)
             LL_SORT(blt.toactivate_head, cmp_y);
             break;
+
         case VGA_V_BLANK-2 :
             // rewind all objects to activate
             LL_FOREACH(blt.toactivate_head, o) {
