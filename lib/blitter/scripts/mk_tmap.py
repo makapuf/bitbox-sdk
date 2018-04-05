@@ -96,7 +96,7 @@ def out_objects(tmap, basefile, of=None) :
             # verify ids from all tsx + local, find sprite ..
         if of : of.write(struct.pack('2h4B',0,0,255,0,0,0)) ; index +=1
     if of :
-        of.seek(-8,2)
+        if index : of.seek(-8,2) # last one is not a 255,0,0,0 but a 255,255,255,255 ... provided ther is at least one.
         of.write(struct.pack('2h4B',0,0,255,255,255,255)) ; index +=1
 
     return objgroups, unique_ts # ts name, tile type or None
@@ -133,7 +133,6 @@ def out_layers(tmap,of=None,codec='u8') :
         else :
             raise ValueError('Unsupported layer encoding :'+data.get('encoding'))
 
-
         if codec=='u8' and max(indices)>=256 :
             raise ValueError("size of index type too small : %d tiles used"%max(indices))
         assert len(indices) == lw*lh, "not enough or too much data : %d != %d"%(lw*lh, len(tidx))
@@ -165,7 +164,11 @@ def read_tmap(file) :
     for i in range(h_layers) :
         arr=array.array('BH'[h_format-1])
         arr.fromfile(f,h_h*h_w)
-        print("layer %d : "%i,arr[:20],'...')
+        print("layer %d : "%i,end='')
+        if len(arr)>16 :
+            print (list(arr[:10]),'...',list(arr[-6:]),'- %d elements'%len(arr))
+        else :
+            print (arr)
     print(' ---')
     group = 0
     while True :
@@ -215,9 +218,9 @@ if __name__=='__main__' :
         tsB, _ = tid2ts(tmap,M_idx,args.filename)
         if tsA != tsB :
             # not really an error, just an info
-            print(' stderr from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA,tsB), file=sys.stderr)
+            print(' NB : tiles from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA.get('name'),tsB.get('name')), file=sys.stderr)
         print("#define %s_MAP  \"%s_map\""%(tmap_name, tmap_name))
-        print("#define %s_TSET \"%s_tset\""%(tmap_name, tsA))
+        print("#define %s_TSET \"%s_tset\""%(tmap_name, tsA.get("name")))
     print()
 
     objgroups, unique_states = out_objects(tmap, args.filename, of)
