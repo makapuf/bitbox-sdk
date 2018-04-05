@@ -147,8 +147,8 @@ uint16_t h2len(uint16_t n) {return (n&0xff)<<9 | (n>>8)*2;}
 void loadSamples() {
     uint32_t fileOffset = sizeof(struct Mod) + mod32_player.numberOfPatterns * ROWS * mod32_player.numberOfChannels * 4 -1;
 
-    for (int i=0; i<SAMPLES; i++) {
-        
+    for (int i=0; i<SAMPLES; i++)
+    {
         const struct Sample *smp = &mod->samples[i];
         const uint16_t len= h2len(smp->length);
         if (len) {
@@ -177,7 +177,7 @@ void loadSamples() {
 void loadPattern(uint8_t pattern) {
 
     message("loading pattern %d\n",pattern);
-    message("loading at pos %d + %d\n", sizeof(struct Mod),pattern * ROWS  * mod32_player.numberOfChannels * 4 );
+//    message("loading at pos %d + %d\n", sizeof(struct Mod),pattern * ROWS  * mod32_player.numberOfChannels * 4 );
 
     uint8_t *temp =  (uint8_t *) mod + \
         sizeof(struct Mod) + pattern * ROWS * mod32_player.numberOfChannels * 4;
