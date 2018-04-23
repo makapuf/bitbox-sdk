@@ -47,14 +47,31 @@ void blitter_insert(struct object *o, int16_t x, int16_t y, int16_t z)
     LL_PREPEND(blt.inactive_head, o);
 }
 
+static void ensure_in(object *o, object *head, char *str) {
+    object *elt;
+    LL_FOREACH(head,elt) {
+        if (o==elt) {
+            message ("found & removed object %x\n",o);
+            return;
+        }
+    }
+    message ("ERROR : object %x NOT FOUND in %s\n",o,str);
+    blitter_print_state("not found in:");
+    die (1,1);
+}
+
 void blitter_remove(object *o)
 {
+    message("removing %x y=%d h=%d, vga_line=%d : ",o, o->y, o->h, vga_line);
     // object should not be in its active zone
     if ((int)vga_line<o->y) { // not yet reached
+        ensure_in(o,blt.toactivate_head,"toactivate");
         LL_DELETE(blt.toactivate_head, o);
     } else if ((int)vga_line>o->y+o->h) {
+        ensure_in(o,blt.inactive_head,"inactive");
         LL_DELETE(blt.inactive_head, o);
     } else if ((int)vga_line>=VGA_V_PIXELS) { // OK object was not removed but we're past screen display
+        ensure_in(o,blt.active_head,"active");
         LL_DELETE(blt.active_head, o);
     } else {
         // we're in active zone, danger !
