@@ -5,11 +5,8 @@
 
 void btc4_line (object *o);
 
-object * btc4_insert(object *o, const uint32_t *btc, int16_t x, int16_t y, int16_t z)
+void btc4_init(object *o, const uint32_t *btc)
 {
-    // generic attributes
-    o->x=x; o->y=y;o->z=z;
-
     o->w=*btc++;
     o->h=*btc++;
 
@@ -17,7 +14,6 @@ object * btc4_insert(object *o, const uint32_t *btc, int16_t x, int16_t y, int16
     o->data = (uint32_t*)btc;
 
     o->line=btc4_line;
-    return o;
 }
 
 // switch16 version (fastest so far. could be made faster by coding to ASM (?) or blitting 4 lines at a time - full blocks, loading palette progressively ...)
@@ -69,11 +65,8 @@ void btc4_line (object *o)
 
 void btc4_2x_line (object *o);
 
-btc4_2x_insert(object * o, const uint32_t *btc, int16_t x, int16_t y, int16_t z)
+void btc4_2x_init(object * o, const uint32_t *btc)
 {
-    // generic attributes
-    o->x=x; o->y=y;o->z=z;
-
     o->w=(*btc++)*2;
     o->h=(*btc++)*2;
 
@@ -81,7 +74,6 @@ btc4_2x_insert(object * o, const uint32_t *btc, int16_t x, int16_t y, int16_t z)
     o->data = (uint32_t*)btc;
 
     o->line=btc4_2x_line;
-    return o;
 }
 
 // switch16 version (fastest so far. could be made faster by coding to ASM (?) or blitting 4 lines at a time - full blocks, loading palette progressively ...)
