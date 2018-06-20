@@ -72,7 +72,7 @@ def out_objects(tmap, basefile, of=None) :
         objgroups.append((name,index))
 
         if of : print("#define objgroup_%s_%s %d"%(tmap_name, name, index))
-        for obj in objgroup.findall('object'):
+        for obj in objgroup.findall('object[@gid]'):
 
             oid = int(obj.get('gid'))
             if oid not in unique_oids :
