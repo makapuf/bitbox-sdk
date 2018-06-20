@@ -40,7 +40,6 @@ export
 all: emu bitbox $(EXTRA_FILES)
 
 BITBOX_BUILD_DIR   ?= build
-BITBOX_DATA_HEADER ?= data.h
 
 # get canonical Bitbox SDK path
 BITBOX:=$(dir $(realpath $(lastword $(MAKEFILE_LIST))))..
