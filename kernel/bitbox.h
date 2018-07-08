@@ -1,5 +1,9 @@
-// new lowlevel kernel base API
+// lowlevel Bitbox kernel base API
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 // to be provided by games or engines
 #include <stdint.h>
@@ -48,7 +52,7 @@ extern void graph_vsync(void); // user provided, called during vsync lines
 // 0x0rrrrrgggggbbbbb pixels or 0xrrrggbbl
 extern pixel_t *draw_buffer;  // drawing next line, 8 or 16bpp
 
-extern void wait_vsync(); // wait for next vsync start
+extern void wait_vsync(void); // wait for next vsync start
 
 // --- SD reader -------------------------------------------------------------------------
 // use fatfs/ff.h api directly, separately.
@@ -105,9 +109,11 @@ extern volatile uint8_t keyboard_mod[2]; // LCtrl =1, LShift=2, LAlt=4, LWin - R
 extern volatile uint8_t keyboard_key[2][6]; // using raw USB key codes
 
 // --- misc
-void die(int where, int cause); // blink leds
+void die(int where, int cause) __attribute__((__noreturn__)); // blink leds
 
 // do nothing on device, printf it on emulator. redefined by serial to output to serial
 void message (const char *fmt, ...);
 
-
+#ifdef __cplusplus
+} // extern "C"
+#endif
