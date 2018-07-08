@@ -820,7 +820,7 @@ void message (const char *fmt, ...)
 
 void die(int where, int cause)
 {
-    printf("ERROR : dying doing %d at  %d.\n",cause, where);
+    printf("ERROR : dying at %d doing %d.\n",where,cause);
     exit(cause);
 }
 
