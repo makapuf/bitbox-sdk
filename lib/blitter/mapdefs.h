@@ -5,6 +5,8 @@
 
    it mostly describes what will be produced by the export script tmx2.py
 
+DEPRECATED, DO NOT USE, use blitter structs
+
    */
 
 #include <stdint.h>

@@ -123,3 +123,26 @@ struct TilemapFile {
     uint16_t data[]; // nb_layers*map_w*map_h of 2b tileset + 14b tileindex
     // at the end : tmapfileobjects
 };
+
+
+// --- surfaces : 2bpp fast-blit elements
+// layout : data = buffer : 4x4 couple palettes, data as 2bpp pixels. a,b,c,d : not used.
+
+#define SURFACE_BUFSZ(w,h) ( (w+15)/16*4*h + 16*sizeof(couple_t) )
+
+void surface_init (struct object *o, int _w, int _h, void *_data);
+void surface_setpalette (struct object *o, const pixel_t *pal);
+void surface_fillrect (struct object *o, int x1, int y1, int x2, int y2, uint8_t color);
+
+// structure of font file (see mk_font)
+struct Font {
+	uint8_t height, bytes_per_line;
+	uint8_t char_width [128]; // width in pixel of each character.
+	uint8_t data[]; // 2bpp, integer number of bytes by line of character
+};
+
+int surface_chr (struct object *o, const char c, int x, int y, const void *fontdata); 
+// draw a single char
+
+void surface_text (struct object *o, const char *text, int x, int y,const void *fontdata);
+// draw a string, including \n, \t characters
