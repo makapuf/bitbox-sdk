@@ -1,4 +1,9 @@
 #pragma once
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*
 subobjects ?
 clean utils
@@ -6,6 +11,7 @@ sprite_set2x(tf), btc_set2x()
 lock ?
 new tilemaps (multi)
 C++
+u16/u8 pixel_t ?
 */
 
 #include <stdint.h>
@@ -41,7 +47,7 @@ void blitter_remove(object *o);
 // creates a new object, activate it, copy from object.
 void rect_init(struct object *o, uint16_t w, uint16_t h, pixel_t color);
 
-
+// file format of a .spr file
 struct SpriteFileHeader {
     uint16_t magic;
     uint16_t width;
@@ -108,22 +114,28 @@ void tmap_blit(object *dst, int x, int y, uint32_t src_header, const void *src_d
 /* Blit a given layer of a tilemap to an object */
 void tmap_blitlayer(object *tm, int x, int y, uint32_t src_header, const void* data, int layer);
 
-struct TilemapFileObjects {
+// file format of tile maps
+struct TilemapFileObject {
 	int16_t x,y;
-	uint8_t oid;
-	uint8_t v[3];
+	uint8_t type;  // if 255, next object group
+	uint8_t v[3]; // if 255 and oid==255, end
 };
 
 struct TilemapFile {
     uint16_t magic; // 0xb17b
     uint16_t map_w,map_h;
     uint8_t nb_layers; // always blit last layer on screen
-    uint8_t __rfu;
+    uint8_t codec; // 0:u16 1:u8
 
     uint16_t data[]; // nb_layers*map_w*map_h of 2b tileset + 14b tileindex
     // at the end : tmapfileobjects
 };
-
+struct TilesetFile {
+	uint8_t  tilesize; // 8 or 16
+    uint8_t  datacode; // 0 = u16, 1=u8, 2=couples references in palette
+    uint16_t nbtiles;
+    uint16_t data[]; // (optional) : couples palette as u16, then u8 or u16 data[]
+};
 
 // --- surfaces : 2bpp fast-blit elements
 // layout : data = buffer : 4x4 couple palettes, data as 2bpp pixels. a,b,c,d : not used.
@@ -146,3 +158,8 @@ int surface_chr (struct object *o, const char c, int x, int y, const void *fontd
 
 void surface_text (struct object *o, const char *text, int x, int y,const void *fontdata);
 // draw a string, including \n, \t characters
+
+
+#ifdef __cplusplus
+} // extern C
+#endif
