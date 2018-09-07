@@ -8,7 +8,7 @@ __attribute__((weak)) void bitbox_main(void)
 
 		// wait next frame.
 		#if VGA_MODE!=NONE
-		wait_vsync(1);
+		wait_vsync();
 		#endif
 
 		game_frame();
