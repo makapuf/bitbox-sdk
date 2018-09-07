@@ -81,7 +81,6 @@ if __name__=='__main__' :
     # dispatch from first file type
     if file_ext == 'png' : 
         if args.size == None : usage ('must specify tilesize when input is png')
-        name=file_name             
         tilesize = int(args.size)
         img = args.file
         maxtile=9999999 # not limited yet
@@ -89,7 +88,6 @@ if __name__=='__main__' :
     elif file_ext == 'tsx' : 
         if args.size : usage('cannot specify size for tsx files')
         ts=ET.parse(args.file).getroot()
-        name = ts.get('name')
         img = abspath(args.file, ts.find("image").get("source"))
         tilesize = int(ts.get("tilewidth"))
         maxtile = int(ts.get('tilecount'))
