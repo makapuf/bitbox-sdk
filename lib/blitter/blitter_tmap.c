@@ -282,10 +282,6 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
         message("only 8bit tilesets can be blit on 8bpp displays\n");
         die(4,5);
     }
-    if ((header&0xf) != TMAP_U8) {
-        message("only 8bit-index tilemaps are implemented\n");
-        die(4,6); // not implemented
-    }
 
     o->a = (uintptr_t)tileset-tilesize*tilesize; // to start at index 1 and not 0, offset now in bytes.
 
