@@ -102,7 +102,7 @@ def out_objects(tmap, basefile, of=None) :
     return objgroups, unique_ts # ts name, tile type or None
 
 
-def out_layers(tmap,of=None,codec='u8') :
+def out_layers(tmap, basefile, of=None,codec='u8') :
     index=0
     mw = int(tmap.get('width'))
     mh = int(tmap.get('height'))
@@ -133,6 +133,15 @@ def out_layers(tmap,of=None,codec='u8') :
         else :
             raise ValueError('Unsupported layer encoding :'+data.get('encoding'))
 
+        # update lowest / highest id so far
+        min_indices = min(min_indices, min(x for x in indices if x)) # not zero : no tile
+        max_indices = max(max_indices, max(indices))
+
+        # reindex wrt first tileset of the layer (check it's the same before and max ?)
+        _, min_localid = tid2ts(tmap,min_indices,basefile)
+        first_tid = min_indices-min_localid
+        indices = tuple(x-first_tid+1 for x in indices)
+
         if codec=='u8' and max(indices)>=256 :
             raise ValueError("size of index type too small : %d tiles used"%max(indices))
         assert len(indices) == lw*lh, "not enough or too much data : %d != %d"%(lw*lh, len(tidx))
@@ -143,9 +152,6 @@ def out_layers(tmap,of=None,codec='u8') :
             array.array(out_code,indices).tofile(of)
         index += 1
 
-        # update lowest / highest id so far
-        min_indices = min(min_indices, min(x for x in indices if x)) # not zero : no tile
-        max_indices = max(max_indices, max(indices))
 
     return max_indices, min_indices
 
@@ -207,7 +213,7 @@ if __name__=='__main__' :
 
     print(" Generating tilemap file %s from %s using format %s"%(of.name, args.filename, args.format), file=sys.stderr)
 
-    m_idx,M_idx = out_layers (tmap, of, args.format)
+    m_idx,M_idx = out_layers (tmap, args.filename, of, args.format)
 
     # fixme: .mk ?
 
@@ -218,7 +224,8 @@ if __name__=='__main__' :
         tsB, _ = tid2ts(tmap,M_idx,args.filename)
         if tsA != tsB :
             # not really an error, just an info
-            print(' NB : tiles from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA.get('name'),tsB.get('name')), file=sys.stderr)
+            print(' NB : tiles from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA,tsB), file=sys.stderr)
+            #print(' NB : tiles from several tilesets (%s, %s) are used for this tilemap. only first is included.'%(tsA.get('name'),tsB.get('name')), file=sys.stderr)
         print("#define %s_MAP  \"%s_map\""%(tmap_name, tmap_name))
         print("#define %s_TSET \"%s_tset\""%(tmap_name, tsA.get("name")))
     print()
