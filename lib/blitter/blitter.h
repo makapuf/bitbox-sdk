@@ -138,11 +138,12 @@ struct TilesetFile {
 };
 
 // --- surfaces : 2bpp fast-blit elements
-// layout : data = buffer : 4x4 couple palettes, data as 2bpp pixels. a,b,c,d : not used.
+// layout : data = buffer : 4x4 couple palettes + data as 2bpp pixels. a,b,c,d : not used.
 
-#define SURFACE_BUFSZ(w,h) ( (w+15)/16*4*h + 16*sizeof(couple_t) )
+#define SURFACE_BUFSZ(w,h) ( (w+15)/16*4*h + 16*2*sizeof(pixel_t) )
 
-void surface_init (struct object *o, int _w, int _h, void *_data);
+void surface_init (struct object *o, int _w, int _h, void *_data); // width a multiple of 16
+void surface_clear (struct object *o);
 void surface_setpalette (struct object *o, const pixel_t *pal);
 void surface_fillrect (struct object *o, int x1, int y1, int x2, int y2, uint8_t color);
 
@@ -153,7 +154,7 @@ struct Font {
 	uint8_t data[]; // 2bpp, integer number of bytes by line of character
 };
 
-int surface_chr (struct object *o, const char c, int x, int y, const void *fontdata); 
+int surface_char (struct object *o, const char c, int x, int y, const void *fontdata); 
 // draw a single char
 
 void surface_text (struct object *o, const char *text, int x, int y,const void *fontdata);
