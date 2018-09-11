@@ -881,7 +881,9 @@ SDL_sem *frame_sem;
 void wait_vsync()
 {
     // wait other thread to wake me up
-    SDL_SemWait(frame_sem);
+    if (SDL_SemWait(frame_sem)) {
+        printf("SDL_SemWait failed: %s\n", SDL_GetError());
+    }
 }
 
 // wait for the next 60Hz frame.
@@ -938,10 +940,14 @@ int main ( int argc, char** argv )
 {
     process_commandline(argc,argv);
     init_all();
-
+    
     frame_sem=SDL_CreateSemaphore(0);
-    SDL_Thread * thread=SDL_CreateThread(emu_loop,0);
+    if (!frame_sem) {
+        printf("SDL_SemCreate failed: %s\n", SDL_GetError());
+        return 1;
+    }
 
+    SDL_Thread * thread=SDL_CreateThread(emu_loop,0);
     bitbox_main();
 
     SDL_KillThread(thread);
