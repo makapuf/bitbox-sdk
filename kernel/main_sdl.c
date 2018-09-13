@@ -611,6 +611,9 @@ static bool handle_events()
 // -------------------------------------------------
 // limited fatfs-related functions.
 // XXX add non readonly features
+
+#ifdef USE_SDCARD
+
 FRESULT f_mount (FATFS* fs, const TCHAR* path, BYTE opt)
 {
     return FR_OK;
@@ -795,7 +798,7 @@ FRESULT f_rename (const char *file_from, const char *file_to)
         return FR_DISK_ERR;
     }
 }
-
+#endif // USE_SDCARD
 // -- misc bitbox functions
 
 // user button
