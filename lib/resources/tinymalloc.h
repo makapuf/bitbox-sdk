@@ -35,6 +35,8 @@ int t_available();                           // get available mem (but not nec. 
  */
 
 #ifdef TINYMALLOC_IMPLEMENTATION
+#include <stdint.h>
+#include <bitbox.h>
 
 #define debug(...)
 
