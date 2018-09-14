@@ -11,6 +11,7 @@
    NOTE:  This is a single file library. Just include it once in your code and define IMPLEMENTATION_TINYMALLOC before
 
  */
+#include "stdint.h"
 
 // allocate memory. Always returns a valid pointer (or die trying :)
 void *t_malloc(unsigned int nbytes) __attribute__( (warn_unused_result) );
