@@ -5,7 +5,9 @@
  data : raw 8/16b data (start of blits)
  a : start of raw source data
  b : palette if couple palette
- d : if hi u16 not zero, replace with this color. if d&1 render with size = 2x (modify w/h as needed!)
+ d : if hi u16 not zero, replace with this color. 
+     if d&1 render with size = 2x (modify w/h as needed!)
+     if d&2 make it invisible
  */
 
 #include <string.h> // memcpy, memset
@@ -107,7 +109,7 @@ static inline int read_len(uint8_t * restrict * src)
 
 void sprite3_frame(struct object *o, int start_line)
 {
-    if (o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS) { // non visible X : skip rendering this frame
+    if (o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS || o->d & 2 ) { // non visible X : skip rendering this frame
         o->line = skip_line;
         return;
     }
