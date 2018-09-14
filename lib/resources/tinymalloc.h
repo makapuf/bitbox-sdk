@@ -13,6 +13,8 @@
  */
 #include "stdint.h"
 
+#define DIE_ON_NOMEM 0
+
 // allocate memory. Always returns a valid pointer (or die trying :)
 void *t_malloc(unsigned int nbytes) __attribute__( (warn_unused_result) );
 
@@ -36,8 +38,12 @@ int t_available();                           // get available mem (but not nec. 
  */
 
 #ifdef TINYMALLOC_IMPLEMENTATION
+#include <stdint.h>
+#include <bitbox.h>
 
-#define debug(...)
+//#define debug(...)
+#define debug message
+
 
 typedef union header_u {                        // block header
 	struct {
@@ -83,9 +89,12 @@ void *t_malloc(unsigned int nbytes)
 
 
         if (p == freep) { // wrapped around free list : out of memory
-        	debug("Out of memory.\n");
-        	die (3,3);
-        }
+        	message("Out of memory.\n");
+            if (DIE_ON_NOMEM)
+            	die (3,3);
+            else
+                return 0;
+    }
     }
 }
 

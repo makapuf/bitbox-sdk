@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 """make proportional fonts from a bitmap.
 
 ASCII encoding, start with space (0x20) - 128 chars max, first being space
