@@ -283,6 +283,11 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
         die(4,5);
     }
 
+    if ( (header & 0xf) == TMAP_U16) {
+        message("Only 8bit tilemaps are supported now on 8bpp displays. tmap_code:%d \n",header & 0xf);
+        die(4,6);
+    }
+
     o->a = (uintptr_t)tileset-tilesize*tilesize; // to start at index 1 and not 0, offset now in bytes.
 
     o->line = tilesize == 8 ? tilemap_u8_line8_8 : tilemap_u8_line8_any;

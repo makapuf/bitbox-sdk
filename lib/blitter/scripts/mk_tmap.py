@@ -140,10 +140,10 @@ def out_layers(tmap, basefile, of=None,codec='u8') :
         # reindex wrt first tileset of the layer (check it's the same before and max ?)
         _, min_localid = tid2ts(tmap,min_indices,basefile)
         first_tid = min_indices-min_localid
-        indices = tuple(x-first_tid+1 for x in indices)
+        indices = tuple(x-first_tid+1 if x else 0 for x in indices)
 
         if codec=='u8' and max(indices)>=256 :
-            raise ValueError("size of index type too small : %d tiles used"%max(indices))
+            raise ValueError("size of index type too small : tile id %d used"%max(indices))
         assert len(indices) == lw*lh, "not enough or too much data : %d != %d"%(lw*lh, len(tidx))
 
         # output data to binary
@@ -189,7 +189,7 @@ def read_tmap(file) :
 
 if __name__=='__main__' :
     parser = argparse.ArgumentParser(description='Process files for bitbox graphical library.')
-    parser.add_argument('filename', help='input file (tmx)')
+    parser.add_argument('filename', help='input file (.tmx or .map)')
     parser.add_argument('-f','--format',  help='format of the tilemap index (u8, u16)', default='u8')
 
     args = parser.parse_args()

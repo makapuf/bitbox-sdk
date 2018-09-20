@@ -65,14 +65,17 @@ void sprite3_set_solid(object *o, pixel_t color); // set solid color or 0 to res
 void btc4_init    (struct object *o, const uint32_t *btc);
 void btc4_2x_init (struct object *o, const uint32_t *btc);
 
+// tiles width 
 #define TSET_16 0
 #define TSET_32 1
 #define TSET_8 2
-
+// index type
 #define TMAP_U8 1
 #define TMAP_U16 2
 
+// pixels in tileset
 #define TSET_8bit (1<<7)
+#define TSET_16bit 0
 
 #define TMAP_HEADER(w,h,tilesize,tmaptype) (w<<20 | h<<8 | (tilesize)<<4 | (tmaptype))
 #define TMAP_WIDTH(header) (header>>20)
