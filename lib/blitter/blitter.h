@@ -157,11 +157,11 @@ struct Font {
 	uint8_t data[]; // 2bpp, integer number of bytes by line of character
 };
 
+// draw a single char, returns char width
 int surface_char (struct object *o, const char c, int x, int y, const void *fontdata); 
-// draw a single char
 
-void surface_text (struct object *o, const char *text, int x, int y,const void *fontdata);
 // draw a string, including \n, \t characters
+void surface_text (struct object *o, const char *text, int x, int y,const void *fontdata);
 
 
 #ifdef __cplusplus

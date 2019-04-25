@@ -57,7 +57,7 @@ static void ensure_in(object *o, object *head, char *str) {
     }
     message ("ERROR : object %x NOT FOUND in %s\n",o,str);
     blitter_print_state("not found in:");
-    die (1,1);
+    die(1,1);
 }
 
 void blitter_remove(object *o)

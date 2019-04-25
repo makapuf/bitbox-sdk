@@ -21,7 +21,6 @@ const int tilesizes[] = {16,32,8};
 
 #define min(a,b) (a<b?a:b)
 
-
 #define COPY2 *dst++=*src++; *dst++=*src++;
 #define COPY8 COPY2 COPY2 COPY2 COPY2
             /* __asm__ (
@@ -206,12 +205,15 @@ __attribute__((always_inline)) static inline void tilemap_u8_line8(object *o, co
     uint8_t *idxptr = (uint8_t *)o->data+(sprline/tilesize) * tilemap_w; // all is in nb of tiles
 
     // --- column related -> in frame ?
-
-    // horizontal tile offset in tilemap
-    int tile_x = ((o->x<0?-o->x:0)/tilesize)&(tilemap_w-1);  // positive modulo
-    // positive modulo : i&(tilemap_w-1) if tilemap size is a power of two
-
-    const int ofs = o->x<0? o->x%tilesize  :o->x; 
+    // horizontal tile offset in tilemap, draw position
+    int tile_x, ofs;
+    if (o->x >= 0 ) {
+        tile_x = 0;
+        ofs = o->x;
+    } else {
+        tile_x = (-o->x/tilesize) % tilemap_w;
+        ofs = o->x%(int)tilesize;
+    }
     
     uint8_t * restrict dst = (uint8_t*) &draw_buffer[ofs];
     // pixel addr of the last pixel
@@ -222,8 +224,6 @@ __attribute__((always_inline)) static inline void tilemap_u8_line8(object *o, co
 
     // blit to end of line (and maybe a little more)
     // we needed to loop over
-
-    // XXX specify tilesize ?
 
     while (dst<dst_max) {
         if (tile_x>=tilemap_w)
@@ -250,13 +250,10 @@ void tilemap_u8_line8_any(object *o) {
     tilemap_u8_line8(o, tilesizes[((o->b)>>4)&3]);
 }
 
-// specialize - 16pixels wide case
+// specialize - 8 pixels wide case
 void tilemap_u8_line8_8(object *o) {
     tilemap_u8_line8(o, 8);
 }
-
-
-
 
 void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header, const void *tilemap)
 {
