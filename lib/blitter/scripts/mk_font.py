@@ -6,7 +6,7 @@ ASCII encoding, start with space (0x20) - 128 chars max, first being space
 take a font pixmap (1bpp), with name fontname_8x12.png
 
 output the font as a .bin as used in blt_surface :
-- u8 w,h pixel width of a character
+- u8 h, bytes per line pixel width of a character
 - 128 widths in pixels (u8)
 - N characters in pixels made of (w+7)/8*h bytes (ie each line has a whole number of bytes)
 

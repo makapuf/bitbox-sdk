@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 '''
 spr2png.py : simple decoder for spr format to single png vertical strip
