@@ -23,6 +23,7 @@ void t_free(void *ap);                       // free a memory block
 void t_addchunk(void *ptr, unsigned int sz); // declares memory as free from static chunk of mem.
 
 int t_available();                           // get available mem (but not nec. in one chunk !)
+void t_print_stack(); 
 
 // ----- IMPLEMENTATION -----------------------------------------------------------------------------------
 
@@ -30,19 +31,19 @@ int t_available();                           // get available mem (but not nec. 
 
    Memory is managed by blocks :
 
-   +------------+------------+----------- ...  -------+
+ +------------+------------+----------- ...  -------+
  | next_block | block size | user-memory            |
- |+------------+------------+----------- ...  -------+
+ +------------+------------+----------- ...  -------+
                             ^
-   <------- header ---------> | address returned to user
+ <------- header ---------> | address returned to user
  */
 
 #ifdef TINYMALLOC_IMPLEMENTATION
 #include <stdint.h>
 #include <bitbox.h>
 
-//#define debug(...)
-#define debug message
+#define debug(...)
+//#define debug message
 
 
 typedef union header_u {                        // block header
@@ -151,9 +152,9 @@ void t_print_stack()
 	Header *p, *prevp=freep;
 
 	for (p = prevp->s.next; p!=freep; prevp = p, p = p->s.next) {
-		message("chunk at %p size %u\n",p,p->s.size);
+		message("chunk at %p size %u\n",p,p->s.size*sizeof(Header));
 	}
-	message("chunk at %p size %u\n",p,p->s.size);
+	message("chunk at %p size %u\n",p,p->s.size*sizeof(Header));
 	message("-\n");
 }
 
