@@ -109,7 +109,16 @@ extern volatile uint8_t keyboard_mod[2]; // LCtrl =1, LShift=2, LAlt=4, LWin - R
 extern volatile uint8_t keyboard_key[2][6]; // using raw USB key codes
 
 // --- misc
+#ifndef EMULATOR
 void die(int where, int cause) __attribute__((__noreturn__)); // blink leds
+#else
+void exit(int);
+#define die(where,cause) do {\
+    message("Error: die(%d,%d) - file %s, line %d, function %s\n",where,cause,__FILE__,__LINE__,__func__);\
+    while(1);\
+    exit(cause);\
+} while (0)
+#endif 
 
 // do nothing on device, printf it on emulator. redefined by serial to output to serial
 void message (const char *fmt, ...);

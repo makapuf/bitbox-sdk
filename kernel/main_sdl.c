@@ -821,13 +821,6 @@ void message (const char *fmt, ...)
     va_end(argptr);
 }
 
-void die(int where, int cause)
-{
-    printf("ERROR : dying at %d doing %d.\n",where,cause);
-    exit(cause);
-}
-
-
 // --- main
 
 static void process_commandline( int argc, char** argv)
