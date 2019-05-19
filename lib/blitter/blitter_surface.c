@@ -113,7 +113,7 @@ void surface_text (struct object *o, const char *text, int x, int y,const void *
 	const struct Font* font = fontdata;
 	int cx = x; // current X
 	for (const char *c=text ; *c ; c++) {
-		if (y+font->height >= o->h)
+		if (y+font->height > o->h)
 			break;
 
 		if (*c =='\n') {
