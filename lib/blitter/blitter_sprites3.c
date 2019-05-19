@@ -143,15 +143,15 @@ void sprite3_line_noclip (struct object *o)
     struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
     const uint16_t line = (int)o->fr*h->height+vga_line-o->y;
     uint8_t * restrict src = (uint8_t*) o->data + h->data[line];
-
     pixel_t * restrict dst = &draw_buffer[o->x];
+
     uint8_t header;
     uint16_t backref;
 
     do {
         header = *src;
 
-        int nb = read_len(&src);
+        const int nb = read_len(&src);
 
         switch (header >> 6) {
             case BLIT_SKIP:
@@ -181,45 +181,48 @@ void sprite3_line_noclip (struct object *o)
 void sprite3_line_clip (struct object *o)
 {
     struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
-    const uint16_t line = o->fr*h->height+vga_line-o->y;
+    const uint16_t line = (int)o->fr*h->height+vga_line-o->y;
     uint8_t * restrict src = (uint8_t*) o->data + h->data[line];
+    pixel_t * restrict dst = (pixel_t *)&draw_buffer[o->x];
 
-    uint8_t * restrict dst = (uint8_t *)&draw_buffer[o->x];
-    while(dst < (uint8_t *)&draw_buffer[o->x+o->w]) {
-        uint8_t header = *src++;
-        const int nb = header & 63; // or nb bytes
+    uint8_t header;
+
+    do {
+        header = *src;
+
+        const int nb = read_len(&src);
+
         switch (header >> 6) {
             case BLIT_SKIP : // skip
                 dst += nb;
                 break;
             case BLIT_COPY : // literal
-                if (dst>(uint8_t*)&draw_buffer[-MARGIN]) {
+                if (dst>draw_buffer-MARGIN) {
                     memcpy(dst,src,nb);
                 }
                 dst+=nb;
-                src+=nb;
+                src+=nb*sizeof(pixel_t);
                 break;
             case BLIT_BACK : // back reference as u16
-                if (dst>(uint8_t*)&draw_buffer[-MARGIN]) {
+                if (dst>draw_buffer-MARGIN) {
                     const int backref = *(uint16_t*)(src);
                     memcpy(dst,src - backref, nb);
                 }
-                dst += nb;
                 src += 2;
+                dst += nb;
                 break;
             case BLIT_FILL : // fill w / u16
-                if (dst>(uint8_t*)&draw_buffer[-MARGIN]) {
+                if (dst>draw_buffer-MARGIN) {
                     for (int i=0;i<nb;i++) {
-                        *dst++=src[0];
-                        *dst++=src[1];
+                        *dst++=*(pixel_t*)src;
                     }
                 } else {
-                    dst += 2*nb;
+                    dst += nb;
                 }
-                src+=2;
+                src+=sizeof(pixel_t);
                 break;
         }
-    }
+    } while (!(header & 1<<5) && dst < &draw_buffer[o->x+o->w]); // eol
 }
 
 static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, bool clip, bool solid)
