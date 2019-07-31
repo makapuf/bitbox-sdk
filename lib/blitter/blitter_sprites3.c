@@ -48,7 +48,7 @@ void sprite3_load(struct object *o, const void *data)
 
     if (h->magic!=0xB17B) {
     	message("Error : wrong header found");
-    	die(8,8);
+    	bitbox_die(8,8);
     }
 
     o->w = h->width;
@@ -319,13 +319,21 @@ void sprite3_cpl_line_solid_clip (object *o) { sprite3_cpl_line(o,false, true); 
 
 static inline void blit2Xcpl(pixel_t *dst, couple_t color)
 {
+    #if VGA_BPP == 16
     *(couple_t*)dst = (color&0xffff)*0x10001;
     *(couple_t*)(dst+2) = (color >>16)*0x10001;
+    #else
+    *(couple_t*)dst = (color&0xff)*0x101;
+    *(couple_t*)(dst+2) = (color >>8)*0x101;
+    #endif
 }
 static inline void blit2Xsingle(pixel_t *dst, couple_t color)
 {
-    *dst = color &0xffff;
-    *(dst+1) = color &0xffff;
+    #if VGA_BPP == 16
+    *(couple_t*)dst = (color&0xffff)*0x10001;
+    #else
+    *(couple_t*)dst = (color&0xff)*0x101;
+    #endif
 }
 
 // This one has doubled size

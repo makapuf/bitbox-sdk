@@ -280,7 +280,7 @@ void set_mode(int width, int height)
     if ( !screen )
     {
         printf("%s\n",SDL_GetError());
-        die(-1,0);
+        bitbox_die(-1,0);
     }
 
     if (!quiet) {

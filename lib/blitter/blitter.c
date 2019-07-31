@@ -57,7 +57,7 @@ static void ensure_in(object *o, object *head, char *str) {
     }
     message ("ERROR : object %x NOT FOUND in %s\n",o,str);
     blitter_print_state("not found in:");
-    die(1,1);
+    bitbox_die(1,1);
 }
 
 void blitter_remove(object *o)
@@ -75,7 +75,7 @@ void blitter_remove(object *o)
         LL_DELETE(blt.active_head, o);
     } else {
         // we're in active zone, danger !
-        die(4,3);
+        bitbox_die(4,3);
         message ("ERROR : cannot remove active object from blitter yet !\n");
     }
 }

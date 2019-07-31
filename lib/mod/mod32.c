@@ -133,7 +133,7 @@ void loadHeader() {
     if (mod32_player.numberOfChannels > MOD_CHANNELS) {
         mod32_player.numberOfChannels=0; // stop playing
         message("Not enough channels to play this song ! Will respectfully crash here.\n");
-        die (1,1);
+        bitbox_die (1,1);
     }
 
     message("loading %s\n",mod->name);

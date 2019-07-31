@@ -277,12 +277,12 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
 
     if (!(header & TSET_8bit)) {
         message("only 8bit tilesets can be blit on 8bpp displays\n");
-        die(4,5);
+        bitbox_die(4,5);
     }
 
     if ( (header & 0xf) == TMAP_U16) {
         message("Only 8bit tilemaps are supported now on 8bpp displays. tmap_code:%d \n",header & 0xf);
-        die(4,6);
+        bitbox_die(4,6);
     }
 
     o->a = (uintptr_t)tileset-tilesize*tilesize; // to start at index 1 and not 0, offset now in bytes.
@@ -293,7 +293,7 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
 
     if ((header & TSET_8bit)) {
         message("Error: 8bit tileset on a 16bit screen ?");
-        die(4,7);
+        bitbox_die(4,7);
     }
 
     o->a = (uintptr_t)tileset-2*tilesize*tilesize; // to start at index 1 and not 0, offset now in bytes.
@@ -305,7 +305,7 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
             o->line = tilesize==16 ? tilemap_u16_line_16 : tilemap_u16_line_any;
             break;
         default:
-            die(4,4);
+            bitbox_die(4,4);
             break;
     }
     #endif
@@ -328,7 +328,7 @@ void tmap_blit(object *tm, int x, int y, uint32_t src_header, const void *data)
     // XXX FIXME handle different cases ?
     if (dst_type != src_type) {
         message ("Error blitting tmap : dst type : %d, src type %d\n", src_type, dst_type);
-        die(5,5);
+        bitbox_die(5,5);
     }
 
     for (int j=0;j<src_h && j<(dst_h-y);j++)
