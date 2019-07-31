@@ -101,7 +101,7 @@ void blink(int times, int speed) {
 		}
 }
 
-void die(int where, int cause)
+void bitbox_die(int where, int cause)
 {
 	for (;;)
 	{
