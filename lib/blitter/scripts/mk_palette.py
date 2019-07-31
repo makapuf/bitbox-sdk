@@ -24,14 +24,20 @@ if __name__=='__main__' :
     parser = argparse.ArgumentParser()
     parser.add_argument('file_in', nargs='+', help="Input files to extract palette from")
     parser.add_argument("--file_out",help="Output file name.", default='palette.png')
-    parser.add_argument('--colors',type=int, help="number of colors in palette",default=255)
+    parser.add_argument('--colors',type=int, help="number of colors in palette",default=256)
     args = parser.parse_args()
 
-    srcs = [Image.open(filein).convert('RGB') for filein in args.file_in] # removing alpha here
-    src  = stack_image(srcs)
+    if len(args.file_in)>=2 :
+        srcs = [Image.open(filein).convert('RGB') for filein in args.file_in] # removing alpha here
+        src  = stack_image(srcs)
+    else :
+        src  = Image.open(args.file_in[0]) # keep mode as is
 
-    # set to 256c image
-    src_pal=src.quantize(colors=args.colors,method=2)
+    # set to 256c image (if needed)
+    if src.mode!='P' and len(src.palette.asbytes())//3 != args.colors :
+        src_pal=src.quantize(colors=args.colors,method=2)
+    else : 
+        src_pal=src
     if DEBUG: src_pal.save('_debug.png') # after quantization
 
     # save small palette image

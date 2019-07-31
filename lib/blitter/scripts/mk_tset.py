@@ -24,12 +24,12 @@ TILESIZES = (8,16)
 
 def export_tset(name, tilesize, img, palette_type, maxtile) : 
     "tsx export to tileset tset file"
-    print(' - writing',name+'.tset', file=sys.stderr)
 
     src = Image.open(img).convert('RGBA')
     w,h = src.size
 
     nbtiles = min(maxtile, (w//tilesize)*(h//tilesize))
+    print(' - writing',name+'.tset',nbtiles,'tiles',file=sys.stderr)
 
     if palette_type == None : #u16
         datacode = DATA_u16
@@ -44,7 +44,7 @@ def export_tset(name, tilesize, img, palette_type, maxtile) :
         datacode = DATA_u8
 
 
-        new = src.convert('RGB').quantize(palette=palette) 
+        new = src.convert('RGB').quantize(palette=palette) # this will dither ... 
         data = new.getdata()
 
     pixdata = array.array('HBB'[datacode], data)
