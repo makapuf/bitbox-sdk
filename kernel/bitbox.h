@@ -28,7 +28,7 @@ void game_snd_buffer(uint16_t *buffer, int len);
 
 // micro interface to the kernel (8bpp, mono sound). can be used on bitbox _board_ also.
 #if VGA_BPP==8
-	#define RGB(r,g,b)  (((r)&0xe0) | ((g)&0xc0)>>3 | (((b)&0xe0)>>5))
+	#define RGB(r,g,b)  (((r)&0xe0) | ((g)&0xe0)>>3 | (((b)&0xc0)>>6))
 	typedef uint8_t pixel_t;
 #else
     #define VGA_BPP 16 // make it default
@@ -112,7 +112,6 @@ extern volatile uint8_t keyboard_key[2][6]; // using raw USB key codes
 #ifndef EMULATOR
 void bitbox_die(int where, int cause) __attribute__((__noreturn__)); // blink leds
 #else
-void exit(int);
 #define bitbox_die(where,cause) do {\
     message("Error: die(%d,%d) - file %s, line %d, function %s\n",where,cause,__FILE__,__LINE__,__func__);\
     while(1);\

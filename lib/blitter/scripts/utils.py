@@ -51,15 +51,17 @@ def u162rgba(x) :
     return (((x>>10)&0x1f)<<3,((x>>5)&0x1f)<<3,(x&0x1f)<<3,255) if (x>>15) else (0,0,0,0)
 
 def rgba2u8(r,g,b,a) :
-    'R8G8B8A8 to R3G2B2L1'
+    'R8G8B8A8 to RRLGGGBB'
+    if a<128: return TRANSP8
+
     r = (r*7+127)//255
     g = (g*7+127)//255
     b = (b*7+127)//255
-    return r<<5 | (g&~1)<<2 | (b&~1) | (g&1) if a>128 else TRANSP8
+    return r<<5 | g<<2 | b>>1
 
 
-def gen_micro_pal() :
-    # generates a micro palette Image
+def gen_micro_old_pal() :
+    # generates a micro palette Image RRRGGBBL
     pal = []
     for c in range(255) :
         r = c >> 5
@@ -69,9 +71,25 @@ def gen_micro_pal() :
     img = Image.new('P',(16,16))
     img.putdata(list(range(256)))
     img.putpalette(pal)
-    if DEBUG and False :
+    if DEBUG :
         img.save('_micro.png')
     return img
+
+def gen_micro_pal() :
+    # generates a micro2 palette Image RRLGGGBB with l common to R and B
+    pal = []
+    for c in range(255) :
+        r = c >> 5
+        g = (c & 0b00011100) >>2  
+        b = (c & 3)<<1 | (r&1)
+        pal += [r<<5|r<<2|r>>1, g<<5|g<<2|g>>1, b<<5|b<<2|b>>1]
+    img = Image.new('P',(16,16))
+    img.putdata(list(range(256)))
+    img.putpalette(pal)
+    if DEBUG:
+        img.save('build/micro.png')
+    return img
+
 
 def cut_image(img,dw,dh) :
     "cut an image made of tiles into N images. provide tile size"
