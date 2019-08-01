@@ -50,10 +50,17 @@ def u162rgba(x) :
     'A1R5G5B5 to r8,g8,b8,a8'
     return (((x>>10)&0x1f)<<3,((x>>5)&0x1f)<<3,(x&0x1f)<<3,255) if (x>>15) else (0,0,0,0)
 
+def u82rgba(c) :
+    'RRLGGGBB to r8,g8,b8,a8'
+    r3 = c >> 5
+    g3 = (c & 0b00011100) >> 2  
+    b3 = (c & 3)<<1 | (r3&1)
+    return (r3<<5|r3<<2|r3>>1, g3<<5|g3<<2|g3>>1, b3<<5|b3<<2|b3>>1,255)
+
+
 def rgba2u8(r,g,b,a) :
     'R8G8B8A8 to RRLGGGBB'
     if a<128: return TRANSP8
-
     r = (r*7+127)//255
     g = (g*7+127)//255
     b = (b*7+127)//255
@@ -77,12 +84,7 @@ def gen_micro_old_pal() :
 
 def gen_micro_pal() :
     # generates a micro2 palette Image RRLGGGBB with l common to R and B
-    pal = []
-    for c in range(255) :
-        r = c >> 5
-        g = (c & 0b00011100) >>2  
-        b = (c & 3)<<1 | (r&1)
-        pal += [r<<5|r<<2|r>>1, g<<5|g<<2|g>>1, b<<5|b<<2|b>>1]
+    pal = sum( (list(u82rgba(c)[:3]) for c in range(256)), [])
     img = Image.new('P',(16,16))
     img.putdata(list(range(256)))
     img.putpalette(pal)

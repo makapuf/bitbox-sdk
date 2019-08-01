@@ -4,16 +4,25 @@
 spr2png.py : simple decoder for spr format to single png vertical strip
     decode duplicated frames (which are deduplicated in format)
     you can set TYPECOLOR to True to replace each blit type with a color instead of original pixels
+
+    data : red
+    fill : blue
+    copy : green
+    skip : transparent
+
 '''
 
 """
 TODO
 Add args : typecolor, debug, frame columns ... 
+implement copy for u16
+typecolor tints instead of replacing ?
+
 """
 
 from PIL import Image
 import struct 
-from utils import u162rgba
+from utils import u162rgba, u82rgba
 import sys 
 
 CODE_SKIP = 0
@@ -35,10 +44,13 @@ class Sprite :
         self.f = open(f,'rb')
         self.palette = None
         self.parse_header()
-        self.read_data = [self.read_data_u16,None,self.read_data_cpl][self.datacode]
+        self.read_data = [self.read_data_u16,self.read_data_u8,self.read_data_cpl][self.datacode]
 
     def read_data_u16(self,nb) : 
         return [u162rgba(c) for c in struct.unpack('%dH'%nb, self.f.read(nb*2))]
+
+    def read_data_u8(self,nb) : 
+        return [u82rgba(c) for c in struct.unpack('%dB'%nb, self.f.read(nb))]
 
     def read_data_cpl(self,nb) : 
         data = ()
@@ -105,7 +117,7 @@ class Sprite :
                         if TYPECOLOR : color = (0,0,255,255)  
                         for i in range(bl) : data[x+i,y]=color
                     elif self.datacode == DATA_u8 : 
-                        color = struct.unpack('B',self.f.read(1))[0]
+                        color = u82rgba(struct.unpack('B',self.f.read(1))[0])
                         if TYPECOLOR : color = (0,0,255,255)  
                         for i in range(bl) : data[x+i,y]=color
                     elif self.datacode == DATA_cpl : 
@@ -137,6 +149,8 @@ class Sprite :
                             pixels += self.palette[c]
                         if bl%2 : 
                             pixels += (self.palette[ord(self.f.read(1))][0],)
+                    elif self.datacode == DATA_u8 :
+                        pixels = [u82rgba(c) for c in self.f.read(bl)]
                     else : 
                         pixels = [(255,0,255,255)]*bl
                         # fixme implement it
