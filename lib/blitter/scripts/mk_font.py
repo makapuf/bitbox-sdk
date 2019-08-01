@@ -17,6 +17,8 @@ from PIL import Image
 import itertools
 
 
+DEBUG=False
+
 def out_font(filename, outfile):
     img = Image.open(filename)
     data = img.load()
@@ -60,11 +62,11 @@ def out_font(filename, outfile):
         for i,l in enumerate(letters):
             w = len(l) // height
             bts = []
-            print(i+32,chr(i+32))
+            if DEBUG: print(i+32,chr(i+32))
             for y in range(height):
                 line = l[w * y:w * (y + 1)]
                 n = sum(p << (2 * i) for i, p in enumerate(line))
-                print (line,n)
+                if DEBUG: print (line,n)
                 for _ in range(bpl):
                     bts.append(n & 0xff)
                     n >>= 8
