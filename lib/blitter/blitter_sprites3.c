@@ -5,16 +5,18 @@
  data : raw 8/16b data (start of blits)
  a : start of raw source data
  b : palette if couple palette
- d : if hi u16 not zero, replace with this color. 
+ d : if hi u16 not zero, replace with this color. (solid flashes). Feature disbled if BLITTER_NO_SOLID_SPRITES defined
      if d&1 render with size = 2x (modify w/h as needed!)
      if d&2 make it invisible
+
  */
 
 #include <string.h> // memcpy, memset
 #include <stdbool.h>
 #include "blitter.h"
 
-void sprite3_frame(struct object *o, int line);
+void sprite3_frame_raw(struct object *o, int line);
+void sprite3_frame_cpl(struct object *o, int line);
 
 void sprite3_line_noclip         (struct object *o);
 void sprite3_line_clip           (struct object *o);
@@ -60,27 +62,39 @@ void sprite3_load(struct object *o, const void *data)
         uint32_t palette_len = *p++;
         o->b = (uintptr_t) p; // real start of palette
         o->data = (void *) (p+palette_len); // after start of palette
+        o->frame = sprite3_frame_cpl;
     } else {
         o->b=0;
         o->data = (void*) &h->data[h->frames*h->height];
+        o->frame = sprite3_frame_raw;
     }
 
-    o->frame = sprite3_frame;
     o->line = skip_line; // skip now until frame decides which one to use
 
     // default values
     o->fr=0;
     o->d=0; // reset MODE
 }
+static inline int sprite3_is_cpl(struct object *o) {
+    return o->b; // has a palette
+}
 
+#ifndef BLITTER_NO_SOLID_SPRITES
 void sprite3_set_solid(object *o, pixel_t color)
 {
     o->d = color << 16 | (o->d & 0xffff);
 }
+static inline int sprite3_is_solid(struct object *o) {
+    return o->d & 0xffff0000;
+}
+#endif 
 
+static inline int sprite3_is2X(struct object *o) {
+    return o->d & 1;
+}
 void sprite3_toggle2X(object *o)
 {
-    if (o->d&1) { // 2X was set
+    if (sprite3_is2X(o)) { 
         o->w /= 2;
         o->h /= 2;
         o->d &= ~1;
@@ -107,32 +121,40 @@ static inline int read_len(uint8_t * restrict * src)
     return nb;
 }
 
-void sprite3_frame(struct object *o, int start_line)
+static inline int object_clipped(struct object *o) {
+    return o->x < -MARGIN || o->x + (int)o->w >= VGA_H_PIXELS+MARGIN;
+}
+
+static inline int object_offscreen_x(struct object *o) {
+    return o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS;
+}
+
+void sprite3_frame_raw(struct object *o, int start_line)
 {
-    if (o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS || o->d & 2 ) { // non visible X : skip rendering this frame
-        o->line = skip_line;
-        return;
-    }
-
     // select if clip or noclip (choice made each frame)
-    if (o->d & 1) {  // 2X rendering - only for couples for now
-        o->line = sprite3_cpl_line_noclip_2X; // fixme clipping
-        return;
-    }
-
-    if ( o->x < -MARGIN || o->x + (int)o->w >= VGA_H_PIXELS+MARGIN ) { // clip ?
-        // cpl, solid or full pixels ?
-        if (o->b) { // has a palette
-            o->line = o->d & 0xffff0000 ? sprite3_cpl_line_solid_clip : sprite3_cpl_line_clip;
-        } else {
-            o->line = sprite3_line_clip;
-        }
+    if (object_offscreen_x(o)|| o->d & 2 ) { // non visible X : skip rendering this frame 
+        o->line = skip_line;
     } else {
-        if (o->b) {
-            o->line = o->d & 0xffff0000 ? sprite3_cpl_line_solid : sprite3_cpl_line_noclip;
-        } else {
-            o->line = sprite3_line_noclip;
-        }
+        o->line = object_clipped(o) ? sprite3_line_clip : sprite3_line_noclip;
+    }
+}
+
+
+void sprite3_frame_cpl(struct object *o, int start_line)
+{
+    // select if clip or noclip (choice made each frame)
+    if (o->x + (int)o->w < 0 || o->x > VGA_H_PIXELS || o->d & 2 ) { // non visible X : skip rendering this frame 
+        o->line = skip_line;
+    } else if (sprite3_is2X(o)) {  // 2X rendering - only for couples for now
+        o->line = sprite3_cpl_line_noclip_2X; // fixme clipping
+    }     
+#ifndef BLITTER_NO_SOLID_SPRITES
+    else if (sprite3_is_solid ) {
+        o->line =  object_clipped(o) ? sprite3_cpl_line_solid_clip : sprite3_cpl_line_solid;
+    } 
+#endif
+    else {
+        o->line = object_clipped(o) ? sprite3_cpl_line_clip : sprite3_cpl_line_noclip;
     }
 }
 
@@ -313,9 +335,11 @@ static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, b
 
 void sprite3_cpl_line_clip   (object *o) { sprite3_cpl_line(o,true,  false); }
 void sprite3_cpl_line_noclip (object *o) { sprite3_cpl_line(o,false, false); }
+
+#ifndef BLITTER_NO_SOLID_SPRITES
 void sprite3_cpl_line_solid  (object *o) { sprite3_cpl_line(o,false, true); }
 void sprite3_cpl_line_solid_clip (object *o) { sprite3_cpl_line(o,false, true); }
-
+#endif 
 
 static inline void blit2Xcpl(pixel_t *dst, couple_t color)
 {
