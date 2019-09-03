@@ -80,11 +80,14 @@ class Encoder :
         self.frm_w,self.frm_h=frames[0].size
         self.nbframes = len(frames)
 
-        # if by line, re-cut frames to lines # fixme make faster
-        lines=[]
-        for fr in frames :
-            lines += cut_image(fr,self.frm_w, 1)
-        frames= lines
+        # if by line(s), re-cut frames to lines 
+        # fixme make faster
+        if args.vtile : 
+            print(f'using vertical subtiles of {args.vtile} lines')
+            lines=[]
+            for fr in frames :
+                lines += cut_image(fr,self.frm_w, args.vtile)
+            frames= lines
 
         # dedup frames
         self.idframes=[] # frame -> unique frame reference
@@ -141,7 +144,7 @@ class Encoder :
             subbl = []
             for c,it in groupby(bl) :
                 n = sum(1 for _ in it)
-                if n>=MIN_FILL :
+                if n>= args.min_fill :
                     subbl.append((n*PPE,c,False)) # eol forced to false
                 else :
                     if subbl and type(subbl[-1][1])==list :
@@ -200,7 +203,7 @@ class Encoder :
             else :
                 code = CODE_DATA
                 data = bl
-                if len(bl)>MIN_MATCH and bl in s :
+                if len(bl)>args.min_match and bl in s :
                     idx = len(s)-s.rindex(bl)
                     if idx < 65536 :
                         code= CODE_REF
@@ -417,6 +420,7 @@ if __name__=='__main__' :
     parser.add_argument('-s','--size',    help='(for spr) WxH size in pixels of the sprite')
     parser.add_argument('--min_match',    help='minimum match', type=int, default=4)
     parser.add_argument('--min_fill',     help='minimum fill',  type=int, default=4)
+    parser.add_argument('--vtile',        help='vertical lines to cut the image into (0 for frames) - dedup, fast skip', type=int, default=1)
 
 # fixme autocrop ? separate script
     args = parser.parse_args()
@@ -431,9 +435,6 @@ if __name__=='__main__' :
         usage('all input files must be the same type')
 
     print("// %s with args:"%os.path.basename(sys.argv[0]),args, file=sys.stderr)
-
-    MIN_MATCH = args.min_match
-    MIN_FILL  = args.min_fill
 
     # dispatch from first file type
     if first_ext == 'png' :
