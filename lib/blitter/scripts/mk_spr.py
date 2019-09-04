@@ -181,14 +181,11 @@ class Encoder :
         CODE_DATA = 2
         CODE_REF  = 3
 
-        print(' ** stats')
-        print(len(self.blits),'blits: ',end='')
-        print(sum(1 for bl in self.blits if bl[1]==None ),'skips',end='')
-        print(sum(1 for bl in self.blits if type(bl[1])==int ),'fills',end='')
-        print(sum(1 for bl in self.blits if type(bl[1])==str ),'copy, size=',sum(len(x) for x in self.blits if type(x[1]==str)))
-        print(sum(1 for bl in self.blits if bl[2]),'lines')
-        uniq_data= set(x[1] for x in self.blits if type(x[1])==str)
-        print(len(uniq_data),'different blits size =',sum(len(x) for x in uniq_data))
+        # one number per code
+        nb=[0,0,0,0]
+        sz=[0,0,0,0]
+        px=[0,0,0,0] 
+
 
         s = b""
         self.frame_index = [0]
@@ -209,6 +206,8 @@ class Encoder :
                         code= CODE_REF
                         data= None # exact value will be determined after since it depends on size of header
 
+            px[code]+=n
+
             # blit header
             s_header = bytes([code<<6 | ((1<<5) if eol else 0) | min(n,31) ])
             n-=31
@@ -224,13 +223,25 @@ class Encoder :
                 data = bytes([idx&0xff, idx>>8])
 
             s += s_header+data
+            nb[code]+=1
+            sz[code]+=len(s_header)+len(data)
 
             if eol  :
                 y += 1
                 self.frame_index.append(len(s))
 
         self.bindata = s
-        print('%d bytes, %.1f bpp'%(len(self.bindata), 8.*len(self.bindata) / (self.src.size[0] * self.src.size[1])))
+
+        print(' ** stats')
+        pixels = self.src.size[0] * self.src.size[1]
+        size = len(self.bindata)
+        lines = sum(1 for bl in self.blits if bl[2])
+        print(f'{lines} lines, {size} bytes, {pixels} pixels, {8*size/pixels:.1f} bpp')
+
+        bnames = 'skip','fill','data','ref.'
+        for bname,bnb,bsz,bpx in zip(bnames,nb,sz,px) : 
+            print(f'  {bname} : {bnb:4} blits, {bsz:4} bytes, {bpx:4} pixels, {(bsz*8/bpx) if bpx else 0:.3f} bpp.')
+
 
     def write_header(self,of) :
         w,h = self.src.size
