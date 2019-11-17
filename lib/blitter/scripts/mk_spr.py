@@ -308,7 +308,7 @@ class Encoder_cpl (Encoder) :
             cplblits.append((size_px,cpl_blit,eol))
 
         couples = sum((x for sz,x,eol in cplblits if x!=None),[])
-        target_nb_couples = min(255,len(couples)//16)
+        target_nb_couples = min(255,len(couples)//4)
 
         print(' *',len(couples),"couples,",len(set(couples)),"different, to",target_nb_couples)
         self.palette, invpal = quantize_couples(couples,target_nb_couples)

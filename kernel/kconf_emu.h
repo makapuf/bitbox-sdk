@@ -30,6 +30,12 @@
 #define VGA_H_PIXELS 400
 #define VGA_V_PIXELS 300
 
+#elif VGA_MODE==400240 // WQVGA
+// 400x240 based on 640x480 + skipline / non VESA on lightly O/C core (180MHz) - ~ 30kHz, 56fps
+#define VGA_SKIPLINE
+#define VGA_H_PIXELS 400
+#define VGA_V_PIXELS 240
+
 #elif VGA_MODE==320
 
 // 320 240 non completely VESA on non O/C core (168MHz) - 30kHz, 60fps

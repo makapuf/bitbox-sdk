@@ -1,5 +1,4 @@
 // blitter_sprites3.c : simpler blitter objects. .
-// All in 8bpp, define vga_palette symbol as uint16_t [256] to expand later
 
 /* object layout in memory :
  data : raw 8/16b data (start of blits)
@@ -121,6 +120,11 @@ static inline int read_len(uint8_t * restrict * src)
     return nb;
 }
 
+static inline int eol(uint8_t header) { 
+    return header & 1<<5; 
+}
+
+void sprite3_frame(struct object *o, int start_line)
 static inline int object_clipped(struct object *o) {
     return o->x < -MARGIN || o->x + (int)o->w >= VGA_H_PIXELS+MARGIN;
 }
@@ -196,7 +200,7 @@ void sprite3_line_noclip (struct object *o)
                 src+=sizeof(pixel_t);
                 break;
         }
-    } while (!(header & 1<<5));
+    } while (!eol(header));
 }
 
 // fixme join with noclip through inline, allow partial skips like next one
@@ -244,27 +248,26 @@ void sprite3_line_clip (struct object *o)
                 src+=sizeof(pixel_t);
                 break;
         }
-    } while (!(header & 1<<5) && dst < &draw_buffer[o->x+o->w]); // eol
+    } while (!eol(header) && dst < &draw_buffer[o->x+o->w]);
 }
 
 static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, bool clip, bool solid)
 {
     // Skip to line
     struct SpriteFileHeader *h = (struct SpriteFileHeader*)o->a;
-    const uint16_t line = o->fr*h->height+vga_line-o->y;
-    uint8_t *  restrict src=(uint8_t*) o->data + h->data[line];
-
-    pixel_t *  restrict dst=draw_buffer+o->x; // u16 for vga8
+    const unsigned int line = (int)o->fr*h->height+vga_line-o->y;
+    uint8_t * restrict src=(uint8_t*) o->data + h->data[line];
+    pixel_t * restrict dst=draw_buffer+o->x; // u16 for vga8
     couple_t * restrict couple_palette = (couple_t *)o->b;
 
     uint8_t header;
-    couple_t solidcolor = (o->d>>16) * 0x10001;
+    couple_t solidcolor = (o->d>>16) * 0x10001;//only if 16bpp !
 
     // clip left : skip runs fixme finish partial run ?
     if (clip) {
-        do {
+        while (dst<draw_buffer-MARGIN) {
             header=*src;
-            int nb = read_len(&src);
+            const int nb = read_len(&src);
             dst += nb;
             switch (header>>6) {
                 case BLIT_SKIP :
@@ -272,19 +275,24 @@ static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, b
                 case BLIT_COPY:
                     src += (nb+1)/2;
                     break;
-                case BLIT_FILL : // fill w / u16
+                case BLIT_FILL :
                     src+=1;
                     break;
                 case BLIT_BACK :
                     src+=2;
                     break;
             }
-        } while (dst<draw_buffer-MARGIN);
+
+            if (eol(header)) {
+                return;
+            }
+        }
     }
+
 
     do {
         header=*src;
-        int nb = read_len(&src);
+        const int nb = read_len(&src);
 
         switch (header >> 6) {
             case BLIT_SKIP :
@@ -330,7 +338,7 @@ static inline __attribute__((always_inline)) void sprite3_cpl_line (object *o, b
                 }
                 break;
         }
-    } while (!(header & 1<<5) && dst < &draw_buffer[o->x+o->w]); // eol
+    } while (!eol(header) && dst < &draw_buffer[o->x+o->w]); // eol
 }
 
 void sprite3_cpl_line_clip   (object *o) { sprite3_cpl_line(o,true,  false); }
@@ -425,5 +433,5 @@ void sprite3_cpl_line_noclip_2X (object *o) {
                 break;
 
         }
-    } while (!(header & 1<<5)); // eol
+    } while (!eol(header));
 }

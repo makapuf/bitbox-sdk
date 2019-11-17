@@ -54,7 +54,7 @@ class Sprite :
 
     def read_data_cpl(self,nb) : 
         data = ()
-        for i in range((nb+1)/2) : 
+        for i in range((nb+1)//2) : 
             c = ord(self.f.read(1))
             data += self.palette[c]
 

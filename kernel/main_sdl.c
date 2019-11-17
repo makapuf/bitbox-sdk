@@ -46,8 +46,8 @@
 
 
 // emulated screen size, possibly displayed larger
-int screen_width;
-int screen_height;
+int screen_width=0;
+int screen_height=0;
 
 #define LINE_BUFFER 1024
 #ifndef LINE_MARGIN
@@ -73,8 +73,8 @@ uint16_t kbd_gamepad_buttons;
 uint16_t sdl_gamepad_buttons[2]; // real gamepad read from SDL
 bool sdl_gamepad_from_axis[2]; // emulate buttons from gamepad ?
 
-uint32_t vga_line;
-volatile uint32_t vga_frame;
+uint32_t vga_line=0;
+volatile uint32_t vga_frame=0;
 #ifdef VGA_SKIPLINE
 volatile int vga_odd;
 #endif
