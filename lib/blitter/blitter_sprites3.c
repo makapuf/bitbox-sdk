@@ -149,7 +149,7 @@ void sprite3_frame_cpl(struct object *o, int start_line)
         o->line = sprite3_cpl_line_noclip_2X; // fixme clipping
     }     
 #ifndef BLITTER_NO_SOLID_SPRITES
-    else if (sprite3_is_solid ) {
+    else if (sprite3_is_solid(o) ) {
         o->line =  object_clipped(o) ? sprite3_cpl_line_solid_clip : sprite3_cpl_line_solid;
     } 
 #endif
