@@ -92,7 +92,7 @@ void *t_malloc(unsigned int nbytes)
         if (p == freep) { // wrapped around free list : out of memory
         	message("Out of memory.\n");
             if (DIE_ON_NOMEM)
-            	die (3,3);
+            	bitbox_die (3,3);
             else
                 return 0;
     }
@@ -104,6 +104,7 @@ void t_free(void *ap)
 	Header *bp, *p;
     bp = (Header *)ap - 1;              // point to block header
     // XXX Check header is OK ? (next really in RAM, size not too big ie <64k )
+    // FIXME what if not in right order ?
 
     for (p = freep; !(bp > p && bp < p->s.next); p = p->s.next)
     	if ( p >= p->s.next && (bp > p || bp < p->s.next) )
