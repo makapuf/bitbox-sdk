@@ -79,7 +79,7 @@ void *lz4_stream_decompress (const uint8_t * restrict src_data)
 
 	if (*(uint32_t*)src_data != MAGIC_LZ4 ) {
 		message("ERROR: Magic LZ4 header not found");
-		die(1,4);
+		bitbox_die(1,4);
 	}
 	src_data += 4; 
 
@@ -91,7 +91,7 @@ void *lz4_stream_decompress (const uint8_t * restrict src_data)
 		src_data +=8; 
 	} else {
         message("you must specify --content_size when compressing.\n");
-        die(7,1);
+        bitbox_die(7,1);
         return 0; // never
     }
 
@@ -100,7 +100,10 @@ void *lz4_stream_decompress (const uint8_t * restrict src_data)
     src_data +=4;
 
     uint8_t *dst_data = (uint8_t*)t_malloc(decomp_size);
-	lz4_block_decompress(src_data,block_size,dst_data);
+    if (block_size&1<<31) // high bit set : uncompressed. copy to ram
+        memcpy(dst_data, src_data, decomp_size);
+    else
+	   lz4_block_decompress(src_data,block_size,dst_data);
 
     return dst_data;
 }
