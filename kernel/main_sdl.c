@@ -58,6 +58,8 @@ int screen_height;
 static int slow; // parameter : run slower ?
 static int fullscreen; // shall run fullscreen
 static int quiet=1; // quiet by default now
+static int nodisplay=0; // no display / graphics
+static int nosound=0; // mute all
 static int scale=VGA_V_PIXELS<400 ? 2 : 1; // scale display by this in pixels
 
 // Video
@@ -334,6 +336,9 @@ void instructions ()
     printf("  --scale2x to scale display 2x (also --scale1x)\n");
     printf("  --slow to run game very slowly (for debug)\n");
     printf("  --verbose show helpscreen and various messages\n");
+    printf("  --nodisplay: no graphics handled\n");
+    printf("  --nosoubnd: no sound handled\n");
+    printf("  -- options ... : sends extra arguments to emulated program\n");
     printf("\n");
     printf("Use Joystick, Mouse or keyboard.");
     printf("Bitbox user Button is emulated by the F12 key.\n");
@@ -828,12 +833,17 @@ char **bitbox_argv;
 static void process_commandline( int argc, char** argv)
 {
     for (int i=1;i<argc;i++) {
+
         if (!strcmp(argv[i],"--fullscreen"))
             fullscreen = 1;
         else if (!strcmp(argv[i],"--slow"))
             slow = 1;
         else if (!strcmp(argv[i],"--verbose"))
             quiet = 0;
+        else if (!strcmp(argv[i],"--nodisplay"))
+            nodisplay = 1;
+        else if (!strcmp(argv[i],"--nosound"))
+            nosound = 1;
         else if (!strcmp(argv[i],"--scale1x"))
             scale = 1;
         else if (!strcmp(argv[i],"--scale2x"))
@@ -847,6 +857,15 @@ static void process_commandline( int argc, char** argv)
             instructions();
             exit(0);
         }
+
+        #if VGA_MODE==NONE
+        nodisplay=1;
+        #endif
+
+        #ifndef NO_AUDIO
+        nosound=1;
+        #endif
+
     }
 
     // display current options
@@ -860,21 +879,31 @@ static void process_commandline( int argc, char** argv)
 static void init_all(void)
 {
     // initialize SDL video
-    if ( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) < 0 ) {
+    uint32_t flags=0;
+
+    if (!nodisplay)
+        flags |= SDL_INIT_VIDEO;
+    
+    if (!nosound)
+        flags |= SDL_INIT_AUDIO;
+
+    if ( SDL_Init( flags ) < 0 ) {
         printf( "Unable to init SDL: %s\n", SDL_GetError() );
         exit(1);
     }
     atexit(SDL_Quit); // make sure SDL cleans up before exit
 
-
     set_led(0); // off by default
-    set_mode(VGA_H_PIXELS,VGA_V_PIXELS); // create a default new window
-    SDL_ShowCursor(SDL_DISABLE);
 
-    #ifndef NO_AUDIO
-    audio_init();
-    SDL_PauseAudio(0); // now start sound
-    #endif
+    if (!nodisplay) {
+        set_mode(VGA_H_PIXELS,VGA_V_PIXELS); // create a default new window
+        SDL_ShowCursor(SDL_DISABLE);
+    }
+
+    if (!nosound) {
+        audio_init();
+        SDL_PauseAudio(0); // now start sound
+    }
 
     joy_init();
 }
@@ -912,9 +941,8 @@ static inline void frame_wait( void )
 int emu_loop (void *_)
 {
     while (1) {
-        #if VGA_MODE!=NONE
-        refresh_screen(screen);
-        #endif
+        if (!nodisplay) 
+            refresh_screen(screen);
 
         // message processing loop
         bool done = handle_events();
@@ -931,8 +959,10 @@ int emu_loop (void *_)
         SDL_SemPost(frame_sem);
         frame_wait();
 
-        vsync_screen(); // runs vsync now, let's hope other thread has finished ...
-        SDL_Flip(screen);
+        if (!nodisplay) {
+            vsync_screen(); // runs vsync now, let's hope other thread has finished ...
+            SDL_Flip(screen);
+        }
 
     }
     exit(0);
