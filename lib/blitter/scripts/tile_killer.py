@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 ''' make tiles unique in tilemap
 outputs out.png with removed duplicate tiles.
 '''
@@ -26,12 +26,12 @@ w,h = src.size
 
 tx = w/TW # nb tiles horizontally
 
-print 'reducing tiles (tilesize %dx%d,'%(TW,TH)+('hflip' if args.hflip else '')+('vflip' if args.vflip else '')+')'
+print ('reducing tiles (tilesize %dx%d,'%(TW,TH)+('hflip' if args.hflip else '')+('vflip' if args.vflip else '')+')')
 
 seen_tiles = set()
 same=diff=empty=0
-for tile_y in range(h/TH) :
-    for tile_x in range(w/TW) :
+for tile_y in range(h//TH) :
+    for tile_x in range(w//TW) :
         im = src.crop((tile_x*TW,tile_y*TH,(tile_x+1)*TW,(tile_y+1)*TH))
         data = tuple(im.getdata())
         if all(x[3]==0 for x in data) :
@@ -58,7 +58,7 @@ if args.pack :
 
 src.save(args.file.replace('.png','_unique.png'))
 
-print "tileset     :",empty,'empty',same,'same,',diff,'different tiles', TW*TH*diff,'B.'
-print "tilemap     :",w/TW,'x',h/TH,w//TW*(h//TH)*2,'B'
-print "total (8b)  :", TW*TH*diff  +w//TW*(h//TH)*2
-print "total (16b) :", TW*TH*diff*2+w//TW*(h//TH)*2
+print ("tileset     :",empty,'empty',same,'same,',diff,'different tiles', TW*TH*diff,'B.')
+print ("tilemap     :",w/TW,'x',h/TH,w//TW*(h//TH)*2,'B')
+print ("total (8b)  :", TW*TH*diff  +w//TW*(h//TH)*2)
+print ("total (16b) :", TW*TH*diff*2+w//TW*(h//TH)*2)
