@@ -110,13 +110,21 @@ extern volatile uint8_t keyboard_key[2][6]; // using raw USB key codes
 
 // --- misc
 #ifndef EMULATOR
+
 void bitbox_die(int where, int cause) __attribute__((__noreturn__)); // blink leds
+
 #else
+
+void exit(int);
 #define bitbox_die(where,cause) do {\
     message("Error: die(%d,%d) - file %s, line %d, function %s\n",where,cause,__FILE__,__LINE__,__func__);\
     while(1);\
     exit(cause);\
 } while (0)
+
+extern int bitbox_argc; 
+extern char **bitbox_argv;
+
 #endif 
 
 // do nothing on device, printf it on emulator. redefined by serial to output to serial

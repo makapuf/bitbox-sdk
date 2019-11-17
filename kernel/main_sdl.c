@@ -822,6 +822,8 @@ void message (const char *fmt, ...)
 }
 
 // --- main
+int bitbox_argc;
+char **bitbox_argv;
 
 static void process_commandline( int argc, char** argv)
 {
@@ -836,7 +838,12 @@ static void process_commandline( int argc, char** argv)
             scale = 1;
         else if (!strcmp(argv[i],"--scale2x"))
             scale = 2;
-        else {
+        else if (!strcmp(argv[i],"--")) {
+            // anything after goes to emulated program
+            bitbox_argc = argc - i-1;
+            bitbox_argv = &argv[i+1];
+            break;
+        } else {
             instructions();
             exit(0);
         }
