@@ -167,7 +167,7 @@ class Encoder :
         binblits = []
         for sz,bl,eol in self.blits :
             if type(bl)==list :
-                binblits.append((sz,array.array(t,bl).tostring(),eol))
+                binblits.append((sz,array.array(t,bl).tobytes(),eol))
             else  : # none or int
                 binblits.append((sz,bl,eol))
 
