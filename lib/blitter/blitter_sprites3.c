@@ -124,7 +124,6 @@ static inline int eol(uint8_t header) {
     return header & 1<<5; 
 }
 
-void sprite3_frame(struct object *o, int start_line)
 static inline int object_clipped(struct object *o) {
     return o->x < -MARGIN || o->x + (int)o->w >= VGA_H_PIXELS+MARGIN;
 }

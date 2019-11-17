@@ -65,7 +65,7 @@ void surface_fillrect (struct object *o, int x1, int y1, int x2, int y2, uint8_t
 {
 	if (x1<0 || y1<0 || x1>=x2 || y1>=y2 || x2>o->w || y2>=o->h) {
 		message("wrong arguments : %d,%d %d,%d on surface fill %d,%d\n",x1,y1,x2,y2,o->w,o->h);
-		die(7,7);
+		bitbox_die(7,7);
 	}
 	const uint32_t wc = (color & 3)*0x55555555; // repeat 16 times -> no line not multiple of 16 !
 	uint32_t *p = (uint32_t *)o->data + 4*sizeof(couple_t) + o->w/16*y1; // start of line, in words
