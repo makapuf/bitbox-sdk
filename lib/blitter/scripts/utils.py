@@ -85,7 +85,7 @@ def gen_micro_old_pal() :
 def gen_micro_pal() :
     # generates a micro2 palette Image RRLGGGBB with l common to R and B
     pal = sum( (list(u82rgba(c)[:3]) for c in range(256)), [])
-    img = Image.new('P',(16,16))
+    img = Image.new('P',(32,8))
     img.putdata(list(range(256)))
     img.putpalette(pal)
     if DEBUG:
