@@ -60,24 +60,24 @@ static void surface_line (struct object *o)
 	}
 }
 
-// color between 0 and 3
+// color between 0 and 3, also fills x2,y2
 void surface_fillrect (struct object *o, int x1, int y1, int x2, int y2, uint8_t color)
 {
-	if (x1<0 || y1<0 || x1>=x2 || y1>=y2 || x2>o->w || y2>=o->h) {
+	if (x1<0 || y1<0 || x1>=x2 || y1>=y2 || x2>=o->w || y2>=o->h) {
 		message("wrong arguments : %d,%d %d,%d on surface fill %d,%d\n",x1,y1,x2,y2,o->w,o->h);
 		bitbox_die(7,7);
 	}
 	const uint32_t wc = (color & 3)*0x55555555; // repeat 16 times -> no line not multiple of 16 !
 	uint32_t *p = (uint32_t *)o->data + 4*sizeof(couple_t) + o->w/16*y1; // start of line, in words
 
-	for (int y=y1; y<y2;y++) {
+	for (int y=y1; y<=y2;y++) {
 
 		// set last bits of word
 		const int nbits = (x1%16) * 2;
 		p[x1/16] = (p[x1/16] & (0xffffffffUL << (32-nbits))) | (wc << nbits);
 
 		// fill whole words
-		for (int i=x1/16+1;i<x2/16;i++) p[i] = wc;
+		for (int i=x1/16+1;i<=x2/16;i++) p[i] = wc;
 
 		// set first bits of word - if any
 		const int nbits2 = (x2%16) * 2;
