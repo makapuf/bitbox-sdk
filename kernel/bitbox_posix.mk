@@ -47,8 +47,8 @@ CC=gcc
 CXX=g++
 
 ifeq ($(TYPE), sdl)
-  CPPFLAGS += $(shell sdl-config --cflags)
-  HOSTLIBS += $(shell sdl-config --libs)
+  CPPFLAGS += $(shell sdl2-config --cflags)
+  HOSTLIBS += $(shell sdl2-config --libs)
 else ifeq ($(TYPE), test)
 else
   $(error unknown type $(TYPE) defined, please use sdl or test)
