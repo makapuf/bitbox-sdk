@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -63,7 +63,9 @@ static int nosound=0; // mute all
 static int scale=VGA_V_PIXELS<400 ? 2 : 1; // scale display by this in pixels
 
 // Video
-SDL_Surface* screen;
+SDL_Window* emu_window;
+SDL_Renderer* emu_renderer;
+SDL_Texture* emu_texture;
 uint16_t mybuffer1[LINE_BUFFER];
 uint16_t mybuffer2[LINE_BUFFER];
 uint16_t *draw_buffer = mybuffer1+LINE_MARGIN; // volatile ?
@@ -93,8 +95,6 @@ volatile int8_t gamepad_x[2], gamepad_y[2]; // analog pad values
 
 volatile uint8_t keyboard_mod[2]; // LCtrl =1, LShift=2, LAlt=4, LWin - Rctrl, ...
 volatile uint8_t keyboard_key[2][KBR_MAX_NBR_PRESSED]; // using raw USB key codes
-
-
 
 #if VGA_MODE != NONE
 extern uint16_t vga_palette[256];
@@ -149,13 +149,15 @@ static void __attribute__ ((optimize("-O3"))) vsync_screen ()
     }
 }
 
-static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
-// uses global line + vga_odd, scale two times
+static void __attribute__ ((optimize("-O3"))) update_texture (SDL_Texture *scr)
+// uses global line + vga_odd
 {
 
-    uint32_t * restrict dst = (uint32_t*)scr->pixels; // will render 2 pixels at a time horizontally
-
     draw_buffer = mybuffer1+LINE_MARGIN; // currently 16bit data
+
+    uint16_t *pixels;
+    int pitch; 
+    SDL_LockTexture(emu_texture, 0, (void**)&pixels, &pitch);
 
     for (vga_line=0;vga_line<screen_height;vga_line++) {
         #ifdef VGA_SKIPLINE
@@ -175,34 +177,17 @@ static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
             expand_buffer();
             #endif
         #endif
-
         // copy to screen at this position
         uint16_t *restrict src = (uint16_t*) draw_buffer;
-        switch (scale) {
-            case 1 :
-                // copy to screen at this position (cheating)
-                for (int i=0;i<screen_width;i++)
-                    *dst++= pixelconv32(*src++);
-                break;
-
-            case 2 :
-                for (int i=0;i<screen_width;i++, dst+=2) {
-                    uint32_t pix = pixelconv32(*src++);
-                    *dst = pix; // blit line
-                    *(dst+1) = pix; // blit line
-
-                    *(dst+scr->pitch/sizeof(uint32_t))=pix; // also next line
-                    *(dst+scr->pitch/sizeof(uint32_t)+1)=pix; // also next line
-
-                }
-                dst += scr->pitch/sizeof(uint32_t); // we already drew the line after, skip it
-                break;
-        }
+        uint16_t *restrict dst = pixels + pitch*vga_line/sizeof(uint16_t); // pitch is in bytes
+        memcpy(dst, src, screen_width*sizeof(uint16_t));
 
         // swap lines buffers to simulate double line buffering
         draw_buffer = ( draw_buffer == &mybuffer1[LINE_MARGIN] ) ? &mybuffer2[LINE_MARGIN] : &mybuffer1[LINE_MARGIN];
 
     }
+    
+    SDL_UnlockTexture(emu_texture);
 }
 #else
 #warning VGA_MODE SET TO NONE
@@ -278,15 +263,17 @@ void set_mode(int width, int height)
 {
     screen_width = width;
     screen_height = height;
-    screen = SDL_SetVideoMode(width*scale,height*scale, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|(fullscreen?SDL_FULLSCREEN:0));
-    if ( !screen )
+    //emu_texture = SDL_CreateTexture(emu_renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, width, height);
+    emu_texture = SDL_CreateTexture(emu_renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, width, height);
+
+    if ( !emu_texture )
     {
         printf("%s\n",SDL_GetError());
         bitbox_die(-1,0);
     }
 
     if (!quiet) {
-        printf("%d bpp, flags:%x pitch %d\n", screen->format->BitsPerPixel, screen->flags, screen->pitch/2);
+        //printf("%d bpp, flags:%x pitch %d\n", screen->format->BitsPerPixel, screen->flags, screen->pitch/2);
         printf("Screen is now %dx%d with a scale of %d\n",screen_width,screen_height,scale);
     }
 
@@ -473,10 +460,13 @@ static bool handle_events()
 
         // check for keypresses
         case SDL_KEYDOWN:
+            if (sdl_event.key.repeat) break;
+
             #ifndef DISABLE_ESC_EXIT
             if (sdl_event.key.keysym.sym == SDLK_ESCAPE)
                 return true; // quit now
             #endif
+
 
             /* note that this event WILL be propagated so on emulator
             you'll see both button and keyboard. It's ot really a problem since
@@ -485,7 +475,7 @@ static bool handle_events()
                 user_button=1;
 
             // now create the keyboard event
-            key = key_trans[sdl_event.key.keysym.scancode];
+            key = sdl_event.key.keysym.scancode;
             // mod key ?
             switch (key) {
                 case 0xe0: // lctrl
@@ -521,11 +511,12 @@ static bool handle_events()
             break;
 
         case SDL_KEYUP:
+            if (sdl_event.key.repeat) break;
 
             if (sdl_event.key.keysym.sym == USER_BUTTON_KEY)
                 user_button=0;
 
-            key = key_trans[sdl_event.key.keysym.scancode];
+            key = sdl_event.key.keysym.scancode;
             // mod key ?
             switch (key) {
                 case 0xe0: // lctrl
@@ -815,7 +806,7 @@ int button_state() {
 void set_led(int x) {
     if (!quiet)
         printf("Setting LED to %d\n",x);
-    SDL_WM_SetCaption(x?WM_TITLE_LED_ON:WM_TITLE_LED_OFF, "game");
+    SDL_SetWindowTitle(emu_window, x?WM_TITLE_LED_ON:WM_TITLE_LED_OFF);
 }
 
 void message (const char *fmt, ...)
@@ -893,6 +884,24 @@ static void init_all(void)
     }
     atexit(SDL_Quit); // make sure SDL cleans up before exit
 
+    message("Making window %d by %d\n", VGA_H_PIXELS, VGA_V_PIXELS);
+    emu_window = SDL_CreateWindow(
+         "This will surely be overwritten", 
+         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VGA_H_PIXELS, VGA_V_PIXELS, 
+         fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE
+    );
+    if ( !emu_window ) {
+        printf("%s\n",SDL_GetError());
+        bitbox_die(-1,0);
+    }
+
+    emu_renderer = SDL_CreateRenderer(emu_window, -1, SDL_RENDERER_ACCELERATED);
+    if ( !emu_renderer ) {
+        printf("%s\n",SDL_GetError());
+        bitbox_die(-1,0);
+    }
+
+
     set_led(0); // off by default
 
     if (!nodisplay) {
@@ -941,8 +950,11 @@ static inline void frame_wait( void )
 int emu_loop (void *_)
 {
     while (1) {
-        if (!nodisplay) 
-            refresh_screen(screen);
+        if (!nodisplay)  {
+            update_texture(emu_texture); // 40%CPU
+            SDL_RenderCopy(emu_renderer, emu_texture, NULL, NULL); // 20%CPU
+            SDL_RenderPresent(emu_renderer);
+        }
 
         // message processing loop
         bool done = handle_events();
@@ -961,13 +973,20 @@ int emu_loop (void *_)
 
         if (!nodisplay) {
             vsync_screen(); // runs vsync now, let's hope other thread has finished ...
-            SDL_Flip(screen);
+            //SDL_Flip(screen);
         }
-
     }
-    exit(0);
-    return 0;
+
+    SDL_DestroyTexture(emu_texture);
+    SDL_DestroyRenderer(emu_renderer);
+    SDL_DestroyWindow(emu_window);
+    if (!quiet) printf("Exiting properly\n");
+
+    SDL_Quit();
+    exit(0); // should kill main thread
+    return 0; // necessary for create thread
 }
+
 
 int main ( int argc, char** argv )
 {
@@ -980,10 +999,10 @@ int main ( int argc, char** argv )
         return 1;
     }
 
-    SDL_Thread * thread=SDL_CreateThread(emu_loop,0);
+    SDL_CreateThread(emu_loop,"emulation",0);
     bitbox_main();
 
-    SDL_KillThread(thread);
+
     SDL_DestroySemaphore(frame_sem);
 
     return 0;
