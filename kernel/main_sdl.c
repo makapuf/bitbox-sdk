@@ -853,10 +853,10 @@ static void init_all(void)
     }
     atexit(SDL_Quit); // make sure SDL cleans up before exit
 
-    message("Making window %d by %d\n", VGA_H_PIXELS, VGA_V_PIXELS);
+    message("Making window %d by %d\n", VGA_H_PIXELS*scale, VGA_V_PIXELS*scale);
     emu_window = SDL_CreateWindow(
          "This will surely be overwritten", 
-         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VGA_H_PIXELS, VGA_V_PIXELS, 
+         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, VGA_H_PIXELS*scale, VGA_V_PIXELS*scale, 
          fullscreen ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_RESIZABLE
     );
     if ( !emu_window ) {
