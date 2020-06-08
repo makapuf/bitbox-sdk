@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 'map builder : builds a map from a tilesize, a tileset and a pixmap'
 
 from PIL import Image
@@ -23,14 +23,14 @@ FLIPPED_VERTICALLY   = 0x40000000
 
 src = Image.open(args.tset).convert('RGB')
 w,h = src.size
-if w%TS : print "beware, width not a multiple of tilesize"
-if h%TS : print "beware, height not a multiple of tilesize"
+if w%TS : print ("beware, width not a multiple of tilesize")
+if h%TS : print ("beware, height not a multiple of tilesize")
 
 tileset = {} # binary string : ID
-for tile_y in range(h/TS) :
-    for tile_x in range(w/TS) :
+for tile_y in range(h//TS) :
+    for tile_x in range(w//TS) :
         im = src.crop((tile_x*TS,tile_y*TS,(tile_x+1)*TS,(tile_y+1)*TS))
-        tile_id = tile_x + tile_y * (w/TS) + 1
+        tile_id = tile_x + tile_y * (w//TS) + 1
 
         tileset[ tuple(im.getdata()) ] = tile_id
         if args.hflip :
@@ -42,8 +42,8 @@ for tile_y in range(h/TS) :
 img = Image.open(args.file).convert('RGB')
 w,h = img.size
 tilemap = []
-for tile_y in range(h/TS) :
-    for tile_x in range(w/TS) :
+for tile_y in range(h//TS) :
+    for tile_x in range(w//TS) :
         im = img.crop((tile_x*TS,tile_y*TS,(tile_x+1)*TS,(tile_y+1)*TS))
         tile_id = tileset.get(tuple(im.getdata()),0)
 
@@ -52,7 +52,7 @@ for tile_y in range(h/TS) :
 # generate TMX
 with open(args.file_out,'w') as of :
     of.write('<map version="1.0" orientation="orthogonal" width="%d" height="%d" tilewidth="%d" tileheight="%d">\n'%\
-        (w/TS,h/TS,TS,TS))
+        (w//TS,h//TS,TS,TS))
     of.write ('<tileset firstgid="1" name="tilemap" tilewidth="%d" tileheight="%d" spacing="0" margin="0" >\n'%(TS, TS))
     of.write ('    <image source="%s"/>\n'%os.path.abspath(args.tset))
     of.write ('</tileset>\n')
