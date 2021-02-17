@@ -263,7 +263,6 @@ void set_mode(int width, int height)
 {
     screen_width = width;
     screen_height = height;
-    //emu_texture = SDL_CreateTexture(emu_renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, width, height);
     emu_texture = SDL_CreateTexture(emu_renderer, SDL_PIXELFORMAT_RGB555, SDL_TEXTUREACCESS_STREAMING, width, height);
 
     if ( !emu_texture )
@@ -946,13 +945,55 @@ static inline void frame_wait( void )
     }
 }
 
+int math_gcd(int a, int b)
+{
+    while (b != 0) {
+        int c = a % b;
+        a = b;
+        b = c;
+    }
+    return a;
+}
+
+// we can draw to the screen no problem (it's the correct bitbox vga dimensions)
+// but when copying to the window let's ensure the correct aspect ratio.
+void get_renderer_rect(SDL_Rect *dest_rect)
+{
+    // ensure a nice aspect ratio using the least-common-multiple (lcm) of screen dimensions.
+    // this could be precomputed in set_mode if desired, but it is not a hard computation.
+    int aspect_lcm = screen_width / math_gcd(screen_width, screen_height) * screen_height;
+    // for a 640x480 screen, aspect will be 4:3 (aspect_width:aspect_height)
+    int aspect_width = aspect_lcm / screen_height;
+    int aspect_height = aspect_lcm / screen_width;
+
+    int window_width, window_height;
+    SDL_GetWindowSize(emu_window, &window_width, &window_height);
+
+    if (aspect_height * window_width >= aspect_width * window_height) {
+        // height is the limiting factor:
+        dest_rect->h = window_height;
+        dest_rect->w = window_height * aspect_width / aspect_height;
+        dest_rect->x = (window_width - dest_rect->w)/2;
+        dest_rect->y = 0;
+    } else {
+        // width is the limiting factor:
+        dest_rect->w = window_width;
+        dest_rect->h = window_width * aspect_height / aspect_width;
+        dest_rect->x = 0;
+        dest_rect->y = (window_height - dest_rect->h)/2;
+    }
+}
+
 /* this loop handles asynchronous emulation : screen refresh, user inputs.. */
 int emu_loop (void *_)
 {
     while (1) {
         if (!nodisplay)  {
             update_texture(emu_texture); // 40%CPU
-            SDL_RenderCopy(emu_renderer, emu_texture, NULL, NULL); // 20%CPU
+            SDL_RenderClear(emu_renderer);
+            SDL_Rect dest_rect;
+            get_renderer_rect(&dest_rect);
+            SDL_RenderCopy(emu_renderer, emu_texture, NULL, &dest_rect); // 20%CPU
             SDL_RenderPresent(emu_renderer);
         }
 
