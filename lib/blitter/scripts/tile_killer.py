@@ -24,7 +24,7 @@ TH=args.tileheight if args.tileheight else args.tilesize
 src = Image.open(args.file).convert('RGBA')
 w,h = src.size
 
-tx = w/TW # nb tiles horizontally
+tx = w//TW # nb tiles horizontally
 
 print ('reducing tiles (tilesize %dx%d,'%(TW,TH)+('hflip' if args.hflip else '')+('vflip' if args.vflip else '')+')')
 

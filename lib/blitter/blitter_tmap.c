@@ -351,3 +351,13 @@ void tmap_blitlayer(object *tm, int x, int y, uint32_t src_header, const void* d
 
     tmap_blit(tm,x,y,src_header,data+src_w*src_h*layer);
 }
+
+void *tmap_layer_ofs (const struct TilemapFile *tmap_file, const unsigned n) {
+    // index in bytes
+    const unsigned int ofs = tmap_file->map_w * tmap_file->map_h * n * (tmap_file->codec == 0 ? 2 : 1);
+    return (void *)&tmap_file->data[ofs/2];
+}
+
+const struct TilemapFileObject *tmap_objects(const struct TilemapFile *tmap_file) {
+    return (const struct TilemapFileObject *) tmap_layer_ofs(tmap_file, tmap_file->nb_layers);
+}

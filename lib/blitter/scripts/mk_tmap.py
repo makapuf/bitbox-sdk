@@ -51,12 +51,15 @@ def tid2ts(tmx,id, basefile) :
     src=last_ts.get('source')
     if src :
         ts = ET.parse(abspath(basefile,src)).getroot()
-    # fixme else : included in tmx
+    else: 
+        ts = last_ts
+
     return ts, rid
 
-def out_objects(tmap, basefile, of=None) :
+def out_objects(tmap, basefile, properties, of=None) :
     """count objects, find ids
-    save values to file of.
+    save values to file "of"
+
     returns
         - [('layername1',index_first_object), ('layername2',idx), ...]
         - [(ts,type),(ts,type),...] uniques - to spr files references
@@ -82,7 +85,6 @@ def out_objects(tmap, basefile, of=None) :
                 unique_ts.append((ts.get('name'), tile.get('type') if tile is not None else None))
                 unique_obj_h.append(int(ts.get('tileheight')))
 
-
             uid=unique_oids.index(oid)
             nm = obj.get('name')
 
@@ -90,12 +92,19 @@ def out_objects(tmap, basefile, of=None) :
             y = int(float(obj.get('y'))) # beware y is bottom of object
             y -= unique_obj_h[uid] # remove height of this tile
             if nm and nm.startswith('_') : continue
-            v = int(nm) if nm is not None and nm.isdigit() else 0
-            # fixme values from names / other properties ?
-            if of : of.write(struct.pack('2h4B',x,y,uid,v,0,0)) ; index +=1
+            
+            # read properties from name or properties
+            v = [int(nm) if nm is not None and nm.isdigit() else 0, 0, 0]
+            for i,property in enumerate(properties) :
+                prop = obj.findall("properties/property[@name='%s']"%property)
+                if prop: v[i] = int(prop[0].get('value'))
+
+            if of : of.write(struct.pack('2h4B',x,y,uid,*v)) ; index +=1
             # verify ids from all tsx + local, find sprite ..
+        # group separator
         if of : of.write(struct.pack('2h4B',0,0,255,0,0,0)) ; index +=1
     if of :
+        # file end
         if index : of.seek(-8,2) # last one is not a 255,0,0,0 but a 255,255,255,255 ... provided ther is at least one.
         of.write(struct.pack('2h4B',0,0,255,255,255,255)) ; index +=1
 
@@ -191,12 +200,14 @@ if __name__=='__main__' :
     parser = argparse.ArgumentParser(description='Process files for bitbox graphical library.')
     parser.add_argument('filename', help='input file (.tmx or .map)')
     parser.add_argument('-f','--format',  help='format of the tilemap index (u8, u16)', default='u8')
-
+    parser.add_argument('--properties', nargs='+', help='object property list (3 max)', required=False)
     args = parser.parse_args()
 
     if args.filename.rsplit('.',1)[1]=='map' :
         read_tmap(args.filename)
         sys.exit(0)
+
+
 
     infile = open(args.filename,'r')
 
@@ -205,7 +216,7 @@ if __name__=='__main__' :
         sys.exit(2)
 
     if args.format not in MAP_FORMATS : usage('format not in '+','.join(MAP_FORMATS))
-
+    if len(args.properties)>3 : usage("Max 3 property names")
 
     tmap = ET.parse(args.filename).getroot()
     tmap_name = args.filename.rsplit('.',1)[0].rsplit('/',1)[-1]
@@ -230,7 +241,7 @@ if __name__=='__main__' :
         print("#define %s_TSET \"%s_tset\""%(tmap_name, tsA.get("name")))
     print()
 
-    objgroups, unique_states = out_objects(tmap, args.filename, of)
+    objgroups, unique_states = out_objects(tmap, args.filename, args.properties, of)
     if objgroups :
         print('#define %s_OBJECT_GROUPS \\'%tmap_name)
         for name, index in objgroups :

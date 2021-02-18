@@ -4,6 +4,7 @@
  data : raw 8/16b data (start of blits)
  a : start of raw source data
  b : palette if couple palette
+ c : unused, can be used as custom user property !
  d : if hi u16 not zero, replace with this color. (solid flashes). Feature disbled if BLITTER_NO_SOLID_SPRITES defined
      if d&1 render with size = 2x (modify w/h as needed!)
      if d&2 make it invisible

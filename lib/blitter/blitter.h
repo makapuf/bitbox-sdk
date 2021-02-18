@@ -133,12 +133,19 @@ struct TilemapFile {
     uint16_t data[]; // nb_layers*map_w*map_h of 2b tileset + 14b tileindex
     // at the end : tmapfileobjects
 };
+
 struct TilesetFile {
 	uint8_t  tilesize; // 8 or 16
     uint8_t  datacode; // 0 = u16, 1=u8, 2=couples references in palette
     uint16_t nbtiles;
     uint16_t data[]; // (optional) : couples palette as u16, then u8 or u16 data[]
 };
+
+// pointer to data for layer N. data is u16 but the real data could be u8 !
+void *tmap_layer_ofs (const struct TilemapFile *tmap_file, const unsigned n);
+
+// get pointer to first object, can iterate from there
+const struct TilemapFileObject *tmap_objects(const struct TilemapFile *tmap_file);
 
 // --- surfaces : 2bpp fast-blit elements
 // layout : data = buffer : 4x4 couple palettes + data as 2bpp pixels. a,b,c,d : not used.
