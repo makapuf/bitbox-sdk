@@ -20,83 +20,103 @@ import xml.etree.ElementTree as ET
 
 from PIL import Image
 
-TILESIZES = (8,16)
+TILESIZES = (8, 16)
 
-def export_tset(name, tilesize, img, palette_type, maxtile) : 
+
+def export_tset(name, tilesize, img, palette_type, maxtile):
     "tsx export to tileset tset file"
 
-    src = Image.open(img).convert('RGBA')
-    w,h = src.size
+    src = Image.open(img).convert("RGBA")
+    w, h = src.size
 
-    nbtiles = min(maxtile, (w//tilesize)*(h//tilesize))
-    print(' - writing',name+'.tset',nbtiles,'tiles',file=sys.stderr)
+    nbtiles = min(maxtile, (w // tilesize) * (h // tilesize))
+    print(" - writing", name + ".tset", nbtiles, "tiles", file=sys.stderr)
 
-    if palette_type == None : #u16
+    if palette_type == None:  # u16
         datacode = DATA_u16
         data = tuple(rgba2u16(*c) for c in src.getdata())
-    elif palette_type == 'COUPLES' : 
+    elif palette_type == "COUPLES":
         raise NotImplemented("couples")
-    else : 
-        if palette_type=='MICRO' : 
+    else:
+        if palette_type == "MICRO":
             palette = gen_micro_pal()
-        else :
+        else:
             palette = Image.open(palette_type)
         datacode = DATA_u8
 
-
-        new = src.convert('RGB').quantize(palette=palette) # this will dither ... 
+        new = src.convert("RGB").quantize(palette=palette)  # this will dither ...
         data = new.getdata()
 
-    pixdata = array.array('HBB'[datacode], data)
+    pixdata = array.array("HBB"[datacode], data)
 
-    with open(name+'.tset','wb') as of:
+    with open(name + ".tset", "wb") as of:
         # header
-        of.write(struct.pack('BBH',tilesize,datacode,nbtiles))
+        of.write(struct.pack("BBH", tilesize, datacode, nbtiles))
 
         # tiles
-        t_w = w//tilesize
-        for tile in range(nbtiles) : 
-            tile_x, tile_y = tile%t_w, tile//t_w
-            for row in range(tilesize) :
-                idx = (tile_y*tilesize+row)*w + tile_x*tilesize
-                pixdata[idx:idx+tilesize].tofile(of)
+        t_w = w // tilesize
+        for tile in range(nbtiles):
+            tile_x, tile_y = tile % t_w, tile // t_w
+            for row in range(tilesize):
+                idx = (tile_y * tilesize + row) * w + tile_x * tilesize
+                pixdata[idx : idx + tilesize].tofile(of)
+
 
 # --- Main : commandline parsing
 
-if __name__=='__main__' : 
-    parser = argparse.ArgumentParser(description='Process png or tsx to generate tset file.')
-    parser.add_argument('file', metavar='file',help='input file (tsx or png)') 
-    parser.add_argument('-p','--palette', help='palette name/file. Can use a .png file (255 colors max + transp) or MICRO, or COUPLES')
-    parser.add_argument('-s','--size', help='(for png) size in pixels of a tile', choices=(8,16),type=int)
-    parser.add_argument('-m','--max_tiles', help='export at most max_tiles tiles even if tileset is bigger.',type=int)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="Process png or tsx to generate tset file."
+    )
+    parser.add_argument("file", metavar="file", help="input file (tsx or png)")
+    parser.add_argument(
+        "-p",
+        "--palette",
+        help="palette name/file. Can use a .png file (255 colors max + transp) or MICRO, or COUPLES",
+    )
+    parser.add_argument(
+        "-s",
+        "--size",
+        help="(for png) size in pixels of a tile",
+        choices=(8, 16),
+        type=int,
+    )
+    parser.add_argument(
+        "-m",
+        "--max_tiles",
+        help="export at most max_tiles tiles even if tileset is bigger.",
+        type=int,
+    )
 
     args = parser.parse_args()
 
-    def usage(str) : 
+    def usage(str):
         print("Usage error :", str, file=sys.stderr)
         sys.exit(2)
 
-    file_name,file_ext = args.file.rsplit('.',1)
+    file_name, file_ext = args.file.rsplit(".", 1)
 
     # dispatch from first file type
-    if file_ext == 'png' : 
-        if args.size == None : usage ('must specify tilesize when input is png')
+    if file_ext == "png":
+        if args.size == None:
+            usage("must specify tilesize when input is png")
         tilesize = int(args.size)
         img = args.file
-        maxtile=9999999 # not limited yet
+        maxtile = 9999999  # not limited yet
 
-    elif file_ext == 'tsx' : 
-        if args.size : usage('cannot specify size for tsx files')
-        ts=ET.parse(args.file).getroot()
+    elif file_ext == "tsx":
+        if args.size:
+            usage("cannot specify size for tsx files")
+        ts = ET.parse(args.file).getroot()
         img = abspath(args.file, ts.find("image").get("source"))
         tilesize = int(ts.get("tilewidth"))
-        maxtile = int(ts.get('tilecount'))
+        maxtile = int(ts.get("tilecount"))
 
-        assert tilesize == int(ts.get("tileheight")),'only square tiles'
-    else : 
-        usage('unknown input file type')
-    
+        assert tilesize == int(ts.get("tileheight")), "only square tiles"
+    else:
+        usage("unknown input file type")
+
     assert tilesize in TILESIZES, "tiles sizes must be 8 or 16 "
-    if args.max_tiles : 
+    if args.max_tiles:
         maxtile = min(maxtile, args.max_tiles)
-    export_tset(file_name, tilesize, img, args.palette, maxtile) 
+    export_tset(file_name, tilesize, img, args.palette, maxtile)
