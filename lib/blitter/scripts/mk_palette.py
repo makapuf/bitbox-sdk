@@ -32,6 +32,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--colors", type=int, help="number of colors in palette", default=256
     )
+    parser.add_argument(
+        "--variable", help="variable name in C file", default="game_palette"
+    )
     args = parser.parse_args()
 
     if len(args.file_in) >= 2:
@@ -43,7 +46,7 @@ if __name__ == "__main__":
         src = Image.open(args.file_in[0])  # keep mode as is
 
     # set to 256c image (if needed)
-    if src.mode != "P" or len(src.palette.asbytes()) // 3 != args.colors:
+    if src.mode != "P" or len(src.palette.getdata()) // 3 != args.colors:
         src_pal = src.quantize(colors=args.colors)
     else:
         src_pal = src
@@ -55,10 +58,10 @@ if __name__ == "__main__":
     src_pal.putdata(range(args.colors))
     src_pal.save(args.file_out)
 
-    # export to palette.c
+    # export to palette.c (or just a binary file ?)
     px = src_pal.convert("RGB").load()
     print("#include <stdint.h>")
-    print(f"const uint8_t game_palette[{args.colors}*3]= {{")
+    print(f"const uint8_t {args.variable}[{args.colors}*3]= {{")
 
     for i in range(args.colors):
         c = px[i % 16, i / 16]

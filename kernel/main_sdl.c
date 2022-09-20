@@ -98,6 +98,7 @@ volatile uint8_t keyboard_key[2][KBR_MAX_NBR_PRESSED]; // using raw USB key code
 
 #if VGA_MODE != NONE
 uint32_t vga_palette32[256]; // 32 bits palette
+extern uint8_t micro_palette[256*3];
 
 void set_palette_colors(const uint8_t *rgb, int start, int len) {
     for (int i=start;i<start+len;i++) {        
@@ -860,6 +861,7 @@ static void init_all(void)
     set_led(0); // off by default
 
     if (!nodisplay) {
+        set_palette_colors(micro_palette,0,256); // default
         set_mode(VGA_H_PIXELS,VGA_V_PIXELS); // create a default new window
         SDL_ShowCursor(SDL_DISABLE);
     }

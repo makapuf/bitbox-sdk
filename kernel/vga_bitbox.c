@@ -38,13 +38,11 @@ mode as defined in kconf.h values
 #define SYNC_END (VGA_H_SYNC*TIMER_CYCL/(VGA_H_PIXELS+VGA_H_SYNC+VGA_H_FRONTPORCH+VGA_H_BACKPORCH))
 #define BACKPORCH_END ((VGA_H_SYNC+VGA_H_BACKPORCH)*TIMER_CYCL/(VGA_H_PIXELS+VGA_H_SYNC+VGA_H_FRONTPORCH+VGA_H_BACKPORCH))
 
-// simulates MICRO interface through palette expansion
 typedef uint8_t pixel_t;
-
-extern uint16_t vga_palette[256]; // microX palette in bitbox pixels
 
 #define RGB16(r,g,b)  ((((r)>>3)&0x1f)<<10 | (((g)>>3)&0x1f)<<5 | (((b)>>3)&0x1f))
 
+uint16_t vga_palette[256];
 void set_palette_colors(const uint8_t *rgb, int start, int len) {
     for (int i=start;i<start+len;i++) {        
         uint8_t r = *rgb++;
@@ -102,6 +100,7 @@ static inline void vga_output_black()
     GPIOE->BSRRH |= GPIO_BSRR_BS_0*0x7fff; // Set signal to black: reset all
 }
 
+extern const uint8_t micro_palette[256*3];
 
 void vga_setup()
 {
@@ -111,6 +110,8 @@ void vga_setup()
 		LineBuffer1[i]=0;
 		LineBuffer2[i]=0;
 	}
+
+	set_palette_colors(micro_palette,0,256); // default
 
 	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGEN;
 
