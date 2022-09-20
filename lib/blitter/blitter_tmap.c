@@ -8,31 +8,59 @@
         *data : start of tilemap
         a : tileset
         b : header
+
+    - width and height are displayed sizes, can be bigger/smaller than tilemap, in which case it will loop
+    tilemap size can be 32x32, 64x32, 64x32, (or any other, but need to be standard).
+
+    To initialize the tilemap object, you can also use 0 to mean "same size as tilemap"
+
+    tilemap references can be u16, i16 (semi transparent tiles), u8 or i8 (not all options implemented now)
+
+    header
+            u12 : width of tilemap in tiles
+            u12 : height in tiles
+            u1 : RFU
+            u1 : 0 : 16-bit color tileset 1:8-bit color tileset
+            u2 : tilesize. 00 = 16x16, 01 = 32x32 tiles 10 = 8x8 
+            u4 : tilemap_index_type = 0:u16, 1:u8, 2:i16, 3:i8
+
+    void *data : tile_index either u8 or u16 ...
+
+    tilemap index 0 are always transparent (ie no tile, so first tile in tileset has index 1)
+
+
  */
 #include "blitter.h"
 #include "string.h"
 
 const int tilesizes[] = {16,32,8};
+#define TMAP_HEADER(w,h,tilesizecode,tmaptype) (w<<20 | h<<8 | (tilesizecode)<<4 | (tmaptype)) // w:12 h:12 sizecode:4 maptype:4
+#define TMAP_WIDTH(header) (header>>20)
 
-#define HEIGHT_64 64
-#define WIDTH_64 64
-#define HEIGHT_32 32
-#define WIDTH_32 32
+
+// tiles width 
+#define TSET_16 0
+#define TSET_32 1
+#define TSET_8 2
+// index type
+#define TMAP_U8 1
+#define TMAP_U16 2
+// pixels in tileset
+#define TSET_8bit (1<<7)
+#define TSET_16bit 0
+
 
 #define min(a,b) (a<b?a:b)
 
-#define COPY2 *dst++=*src++; *dst++=*src++;
-#define COPY8 COPY2 COPY2 COPY2 COPY2
-            /* __asm__ (
-                "ldmia %[src]!,{r0-r7} \r\n"
-                "stmia %[dst]!,{r0-r7}"
-                :[src] "+r" (src), [dst] "+r" (dst)
-                :: "r0","r1","r2","r3","r4","r5","r6","r7"
-                );
-            */
+/* COPY8 ? __asm__ (
+    "ldmia %[src]!,{r0-r7} \r\n"
+    "stmia %[dst]!,{r0-r7}"
+    :[src] "+r" (src), [dst] "+r" (dst)
+    :: "r0","r1","r2","r3","r4","r5","r6","r7"
+    );
+*/
 
 // FIXME factorize much of this (as inlines), compute x-info in frame ?
-
 static inline void tilemap_u8_line(object *o, const unsigned int tilesize)
 {
     // in this version, we can assume that we don't have a full
@@ -255,53 +283,50 @@ void tilemap_u8_line8_8(object *o) {
     tilemap_u8_line8(o, 8);
 }
 
-void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header, const void *tilemap)
-{
-
+void tilemap_init (struct object *o, const struct TilesetFile *tileset,int map_w,int map_h, const void *tilemap) {
     o->data = (uint32_t*)tilemap;
 
-    int tilesize = tilesizes[(header>>4)&3];
+    if (tileset->nbtiles > 256) {
+        message("only 8bit tilemap indices handled for now\n");
+        bitbox_die(4,5);        
+    }
 
-    o->b = header;
+    o->b = TMAP_HEADER(map_w,map_h,tileset->tilesize == 8 ? TSET_8 : TSET_16, TMAP_U8); // only 8bits tilemap indices for now.
+    if (tileset->datacode == 1) { // u8 tilesets (TODO:always)
+        o->b |= TSET_8bit;
+    }
 
     // generic attributes
     // 0 for object width == tilemap width
-    o->w=w?w:(header>>20)*tilesize;
-    o->h=h?h:((header>>8)&0xfff)*tilesize;
+    o->w=map_w*tileset->tilesize;
+    o->h=map_h*tileset->tilesize;
 
-    o->x=o->y=0;
-    o->z = 200; // a little behind sprites by default
     o->frame=0;
 
     #if VGA_BPP==8 // 8-bit interface
 
-    if (!(header & TSET_8bit)) {
+    if (tileset->datacode != 1) {
         message("only 8bit tilesets can be blit on 8bpp displays\n");
         bitbox_die(4,5);
     }
 
-    if ( (header & 0xf) == TMAP_U16) {
-        message("Only 8bit tilemaps are supported now on 8bpp displays. tmap_code:%d \n",header & 0xf);
-        bitbox_die(4,6);
-    }
+    o->a = ((uintptr_t)(tileset->data))-tileset->tilesize*tileset->tilesize; // to start at index 1 and not 0, offset now in bytes.
 
-    o->a = (uintptr_t)tileset-tilesize*tilesize; // to start at index 1 and not 0, offset now in bytes.
-
-    o->line = tilesize == 8 ? tilemap_u8_line8_8 : tilemap_u8_line8_any;
+    o->line = tileset->tilesize == 8 ? tilemap_u8_line8_8 : tilemap_u8_line8_any;
 
     #else // 16-bit interface
 
-    if ((header & TSET_8bit)) {
+    if (tileset->datacode != 2) {
         message("Error: 8bit tileset on a 16bit screen ?");
         bitbox_die(4,7);
     }
 
-    o->a = (uintptr_t)tileset-2*tilesize*tilesize; // to start at index 1 and not 0, offset now in bytes.
+    o->a = (uintptr_t)(tileset->data)-2*tileset->tilesize*tileset->tilesize; // to start at index 1 and not 0, offset now in bytes.
     switch (header & 0xf) {
         case TMAP_U8 :
             o->line = tilesize==16 ? tilemap_u8_line_16 : tilemap_u8_line_any;
             break;
-        case TMAP_U16 :
+        case TMAP_U16 : // remove ? 
             o->line = tilesize==16 ? tilemap_u16_line_16 : tilemap_u16_line_any;
             break;
         default:
@@ -311,51 +336,45 @@ void tilemap_init(object *o, const void *tileset, int w, int h, uint32_t header,
     #endif
 }
 
-// blit a tmap inside another one.
-// must have same type of maps (and same tileset is often preferable)
-void tmap_blit(object *tm, int x, int y, uint32_t src_header, const void *data)
-{
-    int src_w = (src_header>>20);
-    int src_h = ((src_header>>8) & 0xfff);
-
-    int src_type = src_header & 0xff; // size+type part
+// blit a tilemap file to x,y position to tilemap vram.
+// will NOT update or check tileset 
+void tmap_blit_file(object *tm, int x, int y, const struct TilemapFile *tf, const unsigned layer) {
 
     uint32_t dst_header = tm->b;
     int dst_w = (dst_header>>20);
     int dst_h = ((dst_header>>8) & 0xfff);
-    int dst_type = dst_header & 0xff;
+    int dst_type = dst_header & 0x0f;
 
-    // XXX FIXME handle different cases ?
-    if (dst_type != src_type) {
-        message ("Error blitting tmap : dst type : %d, src type %d\n", src_type, dst_type);
+    if (dst_type != tf->codec) {
+        message ("Error blitting tmap : src type : %d, dst type %d\n", tf->codec, dst_type);
         bitbox_die(5,5);
     }
 
-    for (int j=0;j<src_h && j<(dst_h-y);j++)
-        for (int i=0;i<src_w && i<(dst_w-x);i++) {
+    uint8_t *src_data = tmap_layer_ofs(tf,layer);
+
+    for (int j=0;j<tf->map_h && j<(dst_h-y);j++) {
+        // memcpy ... 
+        for (int i=0;i<tf->map_w && i<(dst_w-x);i++) {
             if ((dst_type & 0x0f )==TMAP_U8)  { // only consider tmap type
-                uint8_t c = ((uint8_t*)data) [src_w * j+i ];
+                uint8_t c = ((uint8_t*)src_data) [tf->map_w * j+i ];
                 if (c) ((uint8_t *)tm->data) [(j+y)*dst_w+i+x] = c;
             } else {
-                uint16_t c = ((uint16_t*) data)[src_w * j+i ];
+                uint16_t c = ((uint16_t*)src_data)[tf->map_w * j+i ];
                 if (c) ((uint16_t *)tm->data)[(j+y)*dst_w+i+x] = c;
             }
         }
-}
-
-
-void tmap_blitlayer(object *tm, int x, int y, uint32_t src_header, const void* data, int layer)
-{
-    int src_w = (src_header>>20);
-    int src_h = ((src_header>>8) & 0xfff);
-
-    tmap_blit(tm,x,y,src_header,data+src_w*src_h*layer);
+    }
 }
 
 void *tmap_layer_ofs (const struct TilemapFile *tmap_file, const unsigned n) {
+    if (n >= tmap_file->nb_layers) {
+        message ("Error blitting tmap : layer %d does not exist\n", n);
+        bitbox_die(5,1);
+    }
     // index in bytes
     const unsigned int ofs = tmap_file->map_w * tmap_file->map_h * n * (tmap_file->codec == 0 ? 2 : 1);
-    return (void *)&tmap_file->data[ofs/2];
+
+    return (void *)&tmap_file->data[ofs/sizeof(tmap_file->data[0])];
 }
 
 const struct TilemapFileObject *tmap_objects(const struct TilemapFile *tmap_file) {
