@@ -66,9 +66,9 @@ static int scale=VGA_V_PIXELS<400 ? 2 : 1; // scale display by this in pixels
 SDL_Window* emu_window;
 SDL_Renderer* emu_renderer;
 SDL_Texture* emu_texture;
-uint16_t mybuffer1[LINE_BUFFER];
-uint16_t mybuffer2[LINE_BUFFER];
-uint16_t *draw_buffer = mybuffer1+LINE_MARGIN; // volatile ?
+uint8_t mybuffer1[LINE_BUFFER];
+uint8_t mybuffer2[LINE_BUFFER];
+uint8_t *draw_buffer = mybuffer1+LINE_MARGIN; // volatile ?
 
 volatile uint16_t gamepad_buttons[2];
 uint16_t kbd_gamepad_buttons;
@@ -105,7 +105,7 @@ void set_palette_colors(const uint8_t *rgb, int start, int len) {
         uint8_t r = *rgb++;
         uint8_t g = *rgb++;
         uint8_t b = *rgb++;
-        vga_palette32[i] = 0xff<<24 | r<<16 | g<<8 | b; // ARGB
+        vga_palette32[i] = 0xff<<24 | b<<16 | g<<8 | r; // RGBA
     }
 }
 
@@ -132,7 +132,7 @@ static void __attribute__ ((optimize("-O3"))) update_texture (SDL_Texture *scr)
 
     draw_buffer = mybuffer1+LINE_MARGIN; // currently 16bit data
 
-    uint16_t *pixels;
+    uint32_t *pixels;
     int pitch; 
     SDL_LockTexture(emu_texture, 0, (void**)&pixels, &pitch);
 
@@ -148,8 +148,8 @@ static void __attribute__ ((optimize("-O3"))) update_texture (SDL_Texture *scr)
         // copy to screen at this position
         uint8_t *restrict src = draw_buffer;
         uint32_t *restrict dst = pixels + pitch*vga_line/sizeof(uint32_t); // pitch is in bytes
-        for (i=0;i<screen_width;i++) {
-            *dst++ = vga_palette[*src++];
+        for (int i=0;i<screen_width;i++) {
+            *dst++ = vga_palette32[*src++];
         }
 
         // swap lines buffers to simulate double line buffering
@@ -232,7 +232,7 @@ void set_mode(int width, int height)
 {
     screen_width = width;
     screen_height = height;
-    emu_texture = SDL_CreateTexture(emu_renderer, SDL_PIXELFORMAT_ARGB, SDL_TEXTUREACCESS_STREAMING, width, height);
+    emu_texture = SDL_CreateTexture(emu_renderer, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STREAMING, width, height);
 
     if ( !emu_texture )
     {
