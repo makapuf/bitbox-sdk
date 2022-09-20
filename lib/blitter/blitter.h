@@ -10,8 +10,6 @@ clean utils
 btc_set2x()
 lock ?
 new tilemaps (multi)
-C++
-u16/u8 pixel_t ?
 */
 
 #include <stdint.h>
@@ -63,8 +61,15 @@ struct SpriteFileHeader {
 void sprite3_load (struct object *o, const void *sprite_data);
 static inline uint8_t sprite3_nbframes(const object *o) { return ((uint8_t *)o->a)[6]; }
 
+
 void sprite3_toggle2X(object *o); // toggle between standard and 2X mode
 void sprite3_set_solid(object *o, pixel_t color); // set solid color or 0 to reset
+inline void sprite3_setdata(object *o, uint8_t value) {
+	o->b = value;
+}
+inline uint8_t sprite3_getdata(object *o) {
+	return o->b;
+}
 
 // ---------------------------------------------------------------------------------------------------
 // --- Videos
