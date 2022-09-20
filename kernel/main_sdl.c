@@ -64,9 +64,9 @@ static int scale=VGA_V_PIXELS<400 ? 2 : 1; // scale display by this in pixels
 
 // Video
 SDL_Surface* screen;
-uint16_t mybuffer1[LINE_BUFFER];
-uint16_t mybuffer2[LINE_BUFFER];
-uint16_t *draw_buffer = mybuffer1+LINE_MARGIN; // volatile ?
+uint8_t mybuffer1[LINE_BUFFER];
+uint8_t mybuffer2[LINE_BUFFER];
+uint8_t *draw_buffer = mybuffer1+LINE_MARGIN; // volatile ?
 
 volatile uint16_t gamepad_buttons[2];
 uint16_t kbd_gamepad_buttons;
@@ -97,53 +97,18 @@ volatile uint8_t keyboard_key[2][KBR_MAX_NBR_PRESSED]; // using raw USB key code
 
 
 #if VGA_MODE != NONE
-// FIXME to 32 bits direct
-extern uint16_t vga_palette[256];
+uint32_t vga_palette32[256]; // 32 bits palette
 
 void set_palette_colors(const uint8_t *rgb, int start, int len) {
     for (int i=start;i<start+len;i++) {        
         uint8_t r = *rgb++;
         uint8_t g = *rgb++;
         uint8_t b = *rgb++;
-        vga_palette[i] = ((r>>3)&0x1f)<<10 | ((g>>3)&0x1f)<<5 | ((b>>3)&0x1f);
+        vga_palette32[i] = 0xff<<24 | r<<16 | g<<8 | b; // ARGB
     }
 }
 
 void __attribute__((weak)) graph_vsync() {} // default empty
-
-
-void expand_buffer ( void )
-{
-    if (vga_odd) {
-        // expand in place buffer from 8bits RRRGGBBL to 15bits RRRrrGGLggBBLbb
-        // cost is ~ 5 cycles per pixel. not accelerated by putting palette in CCMRAM
-        const uint32_t * restrict src = (uint32_t*)&draw_buffer[VGA_H_PIXELS/2-2];
-        uint32_t * restrict dst=(uint32_t*)&draw_buffer[VGA_H_PIXELS-2];
-        for (int i=0;i<VGA_H_PIXELS/4;i++) {
-            uint32_t pix=*src--; // read 4 src pixels
-            // TODO to 32bit palette directly
-            *dst-- = vga_palette[pix>>24]<<16         | vga_palette[(pix>>16) &0xff]; // write 2 pixels
-            *dst-- = vga_palette[(pix>>8) & 0xff]<<16 | vga_palette[pix &0xff]; // write 2 pixels
-        }
-    }
-}
-
-
-/* naive pixel conversion
-from 16bit bitbox pixel 0RRRRRGGGGGBBBBB
-to 16bit color (565) RRRRRGGGGG0BBBBB
-*/
-static inline uint16_t pixelconv(uint16_t pixel)
-{
-    return (pixel & (uint16_t)(~0x1f))<<1 | (pixel & 0x1f);
-}
-
-// 0RRRRRGGGGGBBBBB to RGB032 rrrrr000 ggggg000 bbbbb000 00000000
-static inline uint32_t pixelconv32(uint16_t pixel)
-{
-    return ((pixel & (0x1f<<10))<<9 | (pixel & (0x1f<<5))<<6 | (pixel & 0x1f)<<3);
-}
-
 
 // emulate vsync
 static void __attribute__ ((optimize("-O3"))) vsync_screen ()
@@ -172,33 +137,28 @@ static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
         #ifdef VGA_SKIPLINE
             vga_odd=0;
             graph_line(); // using line, updating draw_buffer ...
-            expand_buffer();
             vga_odd=1;
             graph_line(); //  a second time for SKIPLINE modes
-            expand_buffer();
         #else
             graph_line();
-            expand_buffer();
         #endif
 
         // copy to screen at this position
-        uint16_t *restrict src = (uint16_t*) draw_buffer;
+        uint8_t *restrict src = draw_buffer;
         switch (scale) {
             case 1 :
-                // copy to screen at this position (cheating)
                 for (int i=0;i<screen_width;i++)
-                    *dst++= pixelconv32(*src++);
+                    *dst++= vga_palette32[*src++];
                 break;
 
             case 2 :
                 for (int i=0;i<screen_width;i++, dst+=2) {
-                    uint32_t pix = pixelconv32(*src++);
+                    uint32_t pix = vga_palette32[*src++];
                     *dst = pix; // blit line
                     *(dst+1) = pix; // blit line
 
                     *(dst+scr->pitch/sizeof(uint32_t))=pix; // also next line
                     *(dst+scr->pitch/sizeof(uint32_t)+1)=pix; // also next line
-
                 }
                 dst += scr->pitch/sizeof(uint32_t); // we already drew the line after, skip it
                 break;
@@ -206,7 +166,6 @@ static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
 
         // swap lines buffers to simulate double line buffering
         draw_buffer = ( draw_buffer == &mybuffer1[LINE_MARGIN] ) ? &mybuffer2[LINE_MARGIN] : &mybuffer1[LINE_MARGIN];
-
     }
 }
 #else
