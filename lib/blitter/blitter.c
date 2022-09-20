@@ -212,11 +212,7 @@ void color_blit(object *o)
     const int16_t x1 = o->x<0?0:o->x;
     const int16_t x2 = o->x+o->w>VGA_H_PIXELS ? VGA_H_PIXELS : o->x+o->w;
 
-    #if VGA_BPP==8
     memset(&draw_buffer[x1],o->a,x2-x1);
-    #else
-    fast_fill(x1,x2,o->a);
-    #endif
 }
 
 void rect_init(struct object *o,uint16_t w, uint16_t h, pixel_t  color)

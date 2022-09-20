@@ -29,15 +29,9 @@ void game_snd_buffer(uint16_t *buffer, int len);
 // also check kconf.h for video modes.
 
 // micro interface to the kernel (8bpp, mono sound). can be used on bitbox _board_ also.
-#if VGA_BPP==8
-	#define RGB(r,g,b)  (((r)&0xe0) | ((g)&0xe0)>>3 | (((b)&0xc0)>>6))
-	typedef uint8_t pixel_t;
-    void set_palette_colors(const uint8_t *rgb, int start, int len); // rgb as 3 bytes array 
-#else
-    #define VGA_BPP 16 // make it default
-	#define RGB(r,g,b)  ((((r)>>3)&0x1f)<<10 | (((g)>>3)&0x1f)<<5 | (((b)>>3)&0x1f))
-	typedef uint16_t pixel_t;
-#endif
+#define RGB(r,g,b)  (((r)&0xe0) | ((g)&0xe0)>>3 | (((b)&0xc0)>>6))
+typedef uint8_t pixel_t;
+void set_palette_colors(const uint8_t *rgb, int start, int len); // rgb as 3 bytes array 
 
 extern uint32_t vga_line; // should be const
 extern volatile uint32_t vga_frame;

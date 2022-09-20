@@ -31,10 +31,6 @@
   #endif
 #endif
 
-#ifndef VGA_BPP
-#define VGA_BPP 16
-#endif 
-
 
 #define VGA_PIXELCLOCK (8064/PAL_MODE) // DMA clocks per pixel
 

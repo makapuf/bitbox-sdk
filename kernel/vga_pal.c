@@ -334,9 +334,7 @@ void __attribute__ ((used)) TIM5_IRQHandler() // Hsync Handler
 
 		graph_line(); // Game callback !
 
-		#ifdef VGA_BPP==8
 		expand_drawbuffer();
-		#endif
 
         #ifdef PROFILE
         line_time = DWT->CYCCNT - line_time; // read the counter

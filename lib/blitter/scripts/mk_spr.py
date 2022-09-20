@@ -20,7 +20,7 @@ HEADER
     u8  nb of frames
     u8  encoding data code
         0 : u16 data : data is made as raw u16 pixels
-        1 : u8 : data is made of raw u8 blits. No palette expansion is done (can be done at the end)
+        1 : u8 : data is made of raw u8 blits.
         2 : cpl : data is made of couples references
 
     u16 hitbox_x1

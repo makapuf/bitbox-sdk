@@ -39,11 +39,7 @@ mode as defined in kconf.h values
 #define BACKPORCH_END ((VGA_H_SYNC+VGA_H_BACKPORCH)*TIMER_CYCL/(VGA_H_PIXELS+VGA_H_SYNC+VGA_H_FRONTPORCH+VGA_H_BACKPORCH))
 
 // simulates MICRO interface through palette expansion
-#if VGA_BPP==8
-	typedef uint8_t pixel_t;
-#else
-	typedef uint16_t pixel_t;
-#endif
+typedef uint8_t pixel_t;
 
 extern uint16_t vga_palette[256]; // microX palette in bitbox pixels
 
@@ -348,9 +344,7 @@ void __attribute__ ((used)) TIM5_IRQHandler() // Hsync Handler
 
 		graph_line(); // Game callback !
 
-		#if VGA_BPP==8
 		expand_drawbuffer();
-		#endif 
 
         #ifdef PROFILE
         line_time = DWT->CYCCNT - line_time; // read the counter

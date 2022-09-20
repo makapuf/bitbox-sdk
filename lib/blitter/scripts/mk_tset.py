@@ -3,7 +3,7 @@
 """
 TSET file format :
     u8 tilesize (8,16)
-    u8 datacode : 0 = u16, 1=u8, 2=couples references in palette
+    u8 datacode : 0 = u16, 1=u8, 2=couples references in palette, *only 1 used *
     u16 nb of tiles
     (optional) : couples palette as u16
     u8 or u16 data[]
@@ -32,20 +32,14 @@ def export_tset(name, tilesize, img, palette_type, maxtile):
     nbtiles = min(maxtile, (w // tilesize) * (h // tilesize))
     print(" - writing", name + ".tset", nbtiles, "tiles", file=sys.stderr)
 
-    if palette_type == None:  # u16
-        datacode = DATA_u16
-        data = tuple(rgba2u16(*c) for c in src.getdata())
-    elif palette_type == "COUPLES":
-        raise NotImplemented("couples")
+    if palette_type == "MICRO":
+        palette = gen_micro_pal()
     else:
-        if palette_type == "MICRO":
-            palette = gen_micro_pal()
-        else:
-            palette = Image.open(palette_type)
-        datacode = DATA_u8
+        palette = Image.open(palette_type)
+    datacode = DATA_u8
 
-        new = src.convert("RGB").quantize(palette=palette)  # this will dither ...
-        data = new.getdata()
+    new = src.convert("RGB").quantize(palette=palette)  # this will dither ...
+    data = new.getdata()
 
     pixdata = array.array("HBB"[datacode], data)
 
@@ -72,7 +66,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-p",
         "--palette",
-        help="palette name/file. Can use a .png file (255 colors max + transp) or MICRO, or COUPLES",
+        help="palette name/file. Can use a .png file (255 colors max + transp) or MICRO",
     )
     parser.add_argument(
         "-s",

@@ -18,8 +18,6 @@ u16/u8 pixel_t ?
 #include <bitbox.h>
 
 /* Blitter : tilemap engine for bitbox.
-
-	To use it with a 8-bit interface, please define VGA_BPP=8
     don't modify an object or add, or remove objects during active video ! (ie if vga_line<VGA_H_PIXELS)
 
 */
@@ -96,7 +94,7 @@ struct TilemapFile {
 
 struct TilesetFile {
 	uint8_t  tilesize; // 8 or 16
-    uint8_t  datacode; // 0 = u16, 1=u8, 2=couples references in palette
+    uint8_t  datacode; // 1=u8, others: RFU
     uint16_t nbtiles;
     uint16_t data[]; // (optional) : couples palette as u16, then u8 or u16 data[]
 };

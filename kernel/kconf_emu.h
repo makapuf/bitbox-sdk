@@ -7,10 +7,6 @@
 #define VGA_MODE 640
 #endif 
 
-#ifndef VGA_BPP
-#define VGA_BPP 16
-#endif 
-
 #define VGA_FPS 60
 #define CCM_MEMORY
 

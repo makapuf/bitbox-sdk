@@ -20,21 +20,17 @@ uint8_t font_cached=0;
 char vram[SCREEN_H][SCREEN_W];
 uint8_t vram_attr[SCREEN_H][SCREEN_W];
 
-#if VGA_BPP==8
 typedef uint16_t couple_t;
-#else
-typedef uint32_t couple_t;
-#endif
 
 couple_t palette[64][4]; // cache of BG<<16 | FG couples - AA,AB,BA,BB
 
 inline void set_palette(uint8_t pen,pixel_t col, pixel_t bg )
 {
 	couple_t *lut=&palette[pen&63][0];
-	lut[3] = col<<VGA_BPP|col;
-	lut[2] =  bg<<VGA_BPP|col;
-	lut[1] = col<<VGA_BPP|bg;
-	lut[0] =  bg<<VGA_BPP|bg;
+	lut[3] = col<<8|col;
+	lut[2] =  bg<<8|col;
+	lut[1] = col<<8|bg;
+	lut[0] =  bg<<8|bg;
 }
 
 void graph_vsync() {

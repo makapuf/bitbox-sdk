@@ -11,7 +11,6 @@
 #		  they can be used to define specific kernel resolution. Usable values are
 #         320x240, 384x271, 400x300, 640x480, 800x600 (see kconf.h)
 #         See also PAL_MODE for specific 15kHz modes in kconf_pal.h
-#       VGA_BPP=8 or 16 (default) : use a 8bpp mode (for micro, emulated for bibox by kernel)
 #       PROFILE		- enable profiling in kernel (red line / pixels onscreen)
 
 # Other Makefile flags :

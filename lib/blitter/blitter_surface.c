@@ -8,11 +8,7 @@ width must be a multiple of 16 !
 
 #include "blitter.h"
 
-#if VGA_BPP==8
 typedef uint16_t couple_t;
-#else
-typedef uint32_t couple_t;
-#endif
 static void surface_line (struct object *o);
 
 void surface_init (struct object *o, int _w, int _h, void *_data)

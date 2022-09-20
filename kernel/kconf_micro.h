@@ -18,10 +18,6 @@
 #define USE_USB_OTG_FS
 #endif
 
-#if VGA_BPP != 8
-#error VGA_BPP must be equal to 8 for bitbox micro targets !
-#endif
-
 #if VGA_MODE==NONE
 
 #elif VGA_MODE==400

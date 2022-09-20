@@ -6,9 +6,6 @@
 #ifndef VGA_MODE
 #define VGA_MODE 640
 #endif 
-#ifndef VGA_BPP
-#define VGA_BPP 16
-#endif 
 
 #ifdef __MACH__
 // for a Mac OS build, they want attributes specified differently:

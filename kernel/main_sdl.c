@@ -172,19 +172,13 @@ static void __attribute__ ((optimize("-O3"))) refresh_screen (SDL_Surface *scr)
         #ifdef VGA_SKIPLINE
             vga_odd=0;
             graph_line(); // using line, updating draw_buffer ...
-            #if VGA_BPP==8
             expand_buffer();
-            #endif
             vga_odd=1;
             graph_line(); //  a second time for SKIPLINE modes
-            #if VGA_BPP==8
             expand_buffer();
-            #endif
         #else
             graph_line();
-            #if VGA_BPP==8
             expand_buffer();
-            #endif
         #endif
 
         // copy to screen at this position
