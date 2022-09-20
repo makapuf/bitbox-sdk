@@ -47,6 +47,8 @@ void audio_frame( void );
 static uint8_t LineBuffer1[VGA_H_PIXELS+16];// __attribute__((aligned (1024)));
 static uint8_t LineBuffer2[VGA_H_PIXELS+16];// __attribute__((aligned (1024)));
 
+void set_palette_colors(const uint8_t *rgb, int start, int len) {} // do nothing, palette is in hardware !
+
 static uint8_t *display_buffer; // will be sent to display
 uint8_t *draw_buffer; // will be drawn (bg already drawn)
 

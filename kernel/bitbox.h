@@ -11,6 +11,8 @@ extern "C" {
 
 #define BITBOX_KERNEL 0010
 
+void bitbox_init(); // init everything.
+
 // --- Main -----------------------------------------------------------------------------
 void game_init(void); // user provided
 void game_frame(void); // user provided
@@ -30,6 +32,7 @@ void game_snd_buffer(uint16_t *buffer, int len);
 #if VGA_BPP==8
 	#define RGB(r,g,b)  (((r)&0xe0) | ((g)&0xe0)>>3 | (((b)&0xc0)>>6))
 	typedef uint8_t pixel_t;
+    void set_palette_colors(const uint8_t *rgb, int start, int len); // rgb as 3 bytes array 
 #else
     #define VGA_BPP 16 // make it default
 	#define RGB(r,g,b)  ((((r)>>3)&0x1f)<<10 | (((g)>>3)&0x1f)<<5 | (((b)>>3)&0x1f))
@@ -52,12 +55,11 @@ extern void graph_vsync(void); // user provided, called during vsync lines
 // 0x0rrrrrgggggbbbbb pixels or 0xrrrggbbl
 extern pixel_t *draw_buffer;  // drawing next line, 8 or 16bpp
 
-extern void wait_vsync(void); // wait for next vsync start
+void wait_vsync(void); // wait for next vsync start
 
 // --- SD reader -------------------------------------------------------------------------
 // use fatfs/ff.h api directly, separately.
 
-void bitbox_init(); // init everything.
 
 // --- user LED, user button -----------------------------------------------------------------
 void set_led(int);

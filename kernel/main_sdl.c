@@ -97,7 +97,17 @@ volatile uint8_t keyboard_key[2][KBR_MAX_NBR_PRESSED]; // using raw USB key code
 
 
 #if VGA_MODE != NONE
+// FIXME to 32 bits direct
 extern uint16_t vga_palette[256];
+
+void set_palette_colors(const uint8_t *rgb, int start, int len) {
+    for (int i=start;i<start+len;i++) {        
+        uint8_t r = *rgb++;
+        uint8_t g = *rgb++;
+        uint8_t b = *rgb++;
+        vga_palette[i] = ((r>>3)&0x1f)<<10 | ((g>>3)&0x1f)<<5 | ((b>>3)&0x1f);
+    }
+}
 
 void __attribute__((weak)) graph_vsync() {} // default empty
 
@@ -111,6 +121,7 @@ void expand_buffer ( void )
         uint32_t * restrict dst=(uint32_t*)&draw_buffer[VGA_H_PIXELS-2];
         for (int i=0;i<VGA_H_PIXELS/4;i++) {
             uint32_t pix=*src--; // read 4 src pixels
+            // TODO to 32bit palette directly
             *dst-- = vga_palette[pix>>24]<<16         | vga_palette[(pix>>16) &0xff]; // write 2 pixels
             *dst-- = vga_palette[(pix>>8) & 0xff]<<16 | vga_palette[pix &0xff]; // write 2 pixels
         }

@@ -45,7 +45,18 @@ mode as defined in kconf.h values
 	typedef uint16_t pixel_t;
 #endif
 
-extern const uint16_t vga_palette[256]; // microX palette in bitbox pixels
+extern uint16_t vga_palette[256]; // microX palette in bitbox pixels
+
+#define RGB16(r,g,b)  ((((r)>>3)&0x1f)<<10 | (((g)>>3)&0x1f)<<5 | (((b)>>3)&0x1f))
+
+void set_palette_colors(const uint8_t *rgb, int start, int len) {
+    for (int i=start;i<start+len;i++) {        
+        uint8_t r = *rgb++;
+        uint8_t g = *rgb++;
+        uint8_t b = *rgb++;
+        vga_palette[i] = RGB16(r,g,b);
+    }
+}
 
 #ifdef PROFILE
 // from http://forums.arm.com/index.php?/topic/13949-cycle-count-in-cortex-m3/
