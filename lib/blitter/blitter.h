@@ -93,7 +93,7 @@ struct TilemapFile {
     uint8_t nb_layers;
     uint8_t codec; // 0:u16 1:u8
 
-    uint16_t data[]; // nb_layers*map_w*map_h of u8 (flexible array member)
+    uint16_t data[]; // nb_layers*map_w*map_h of u8
     // at the end : tmapfileobjects
 };
 
