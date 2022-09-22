@@ -87,7 +87,7 @@ def out_objects(tmap, basefile, properties, of=None):
                 ts, rid = tid2ts(tmap, oid, basefile)
                 tile = ts.find('tile[@id="%d"]' % rid)
                 unique_ts.append(
-                    (ts.get("name"), tile.get("type") if tile is not None else None)
+                    (ts.get("name"), tile.get("class") if tile is not None else None)
                 )
                 unique_obj_h.append(int(ts.get("tileheight")))
 
