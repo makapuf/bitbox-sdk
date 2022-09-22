@@ -90,10 +90,10 @@ struct TilemapFileObject {
 struct TilemapFile {
     uint16_t magic; // 0xb17b
     uint16_t map_w,map_h;
-    uint8_t nb_layers; // always blit last layer on screen
+    uint8_t nb_layers;
     uint8_t codec; // 0:u16 1:u8
 
-    uint16_t data[]; // nb_layers*map_w*map_h of 2b tileset + 14b tileindex
+    uint16_t data[]; // nb_layers*map_w*map_h of u8 (flexible array member)
     // at the end : tmapfileobjects
 };
 
@@ -105,7 +105,10 @@ struct TilesetFile {
 };
 
 // initialize a tilemap from a tileset and some tilemap data. u8 indices for now
-void tilemap_init (struct object *o, const struct TilesetFile *tileset, int map_w,int map_h, const void *tilemap);
+void tilemap_init (struct object *o, const struct TilesetFile *tileset,int map_w,int map_h, const void *data);
+
+// initialize a tilemap from a tileset and a tilemapFile
+void tilemap_init_file (struct object *o, const struct TilesetFile *tileset, const struct TilemapFile *tilemap);
 
 // pointer to data for layer N. data is u16 but the real data could be u8 !
 void *tmap_layer_ofs (const struct TilemapFile *tmap_file, const unsigned n);

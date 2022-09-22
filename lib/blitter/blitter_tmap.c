@@ -123,12 +123,25 @@ void tilemap_u8_line8_8(object *o) {
     tilemap_u8_line8(o, 8);
 }
 
-void tilemap_init (struct object *o, const struct TilesetFile *tileset,int map_w,int map_h, const void *tilemap) {
-    o->data = (uint32_t*)tilemap;
+void tilemap_init_file (struct object *o, const struct TilesetFile *tileset, const struct TilemapFile *tilemap) {
+    if (tilemap->codec != 1) {
+        message("only 8bit tilemap indices can be used now\n");
+        bitbox_die(4,5);
+    }
+
+    tilemap_init (o,tileset, tilemap->map_w, tilemap->map_h, tilemap->data);
+}
+
+void tilemap_init (struct object *o, const struct TilesetFile *tileset,int map_w,int map_h, const void *data) {
+    o->data = data;
 
     if (tileset->nbtiles > 256) {
         message("only 8bit tilemap indices handled for now\n");
         bitbox_die(4,5);        
+    }
+    if (tileset->datacode != 1) {
+        message("only 8bit tilesets can be blit on 8bpp displays\n");
+        bitbox_die(4,7);
     }
 
     o->b = TMAP_HEADER(map_w,map_h,tileset->tilesize == 8 ? TSET_8 : TSET_16, TMAP_U8); // only 8bits tilemap indices for now.
@@ -137,13 +150,10 @@ void tilemap_init (struct object *o, const struct TilesetFile *tileset,int map_w
     // 0 for object width == tilemap width
     o->w=map_w*tileset->tilesize;
     o->h=map_h*tileset->tilesize;
+    // layer
+    o->fr = 0;
 
     o->frame=0;
-
-    if (tileset->datacode != 1) {
-        message("only 8bit tilesets can be blit on 8bpp displays\n");
-        bitbox_die(4,5);
-    }
 
     o->a = ((uintptr_t)(tileset->data))-tileset->tilesize*tileset->tilesize; // to start at index 1 and not 0, offset now in bytes.
 
