@@ -104,10 +104,8 @@ struct TilesetFile {
     uint16_t data[]; // (optional) : couples palette as u16, then u8 or u16 data[]
 };
 
-// initialize a tilemap from a tileset and some tilemap data. u8 indices for now
-void tilemap_init (struct object *o, const struct TilesetFile *tileset,int map_w,int map_h, const void *data);
-
-// initialize a tilemap from a tileset and a tilemapFile
+// initialize a tilemap from a tileset and some tilemap data. u8 indices for now.
+void tilemap_init (struct object *o, const struct TilesetFile *tileset, int map_w, int map_h, const void *tilemap );
 void tilemap_init_file (struct object *o, const struct TilesetFile *tileset, const struct TilemapFile *tilemap);
 
 // pointer to data for layer N. data is u16 but the real data could be u8 !
